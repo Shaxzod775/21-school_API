@@ -4,6 +4,9 @@ import sys
 import requests
 import json
 import time
+import datetime
+import pytz 
+import subprocess
 from config import *
 
 
@@ -166,14 +169,11 @@ def get_info_participant_project_percent(access_token, username, projectId):
 
     return _return
 
-def get_specific_project_complеtion_info(access_token, project_id, project_name):
+def get_specific_project_complеtion_info(access_token, project_id, week, project_name, filename):
     try:
         HEADERS = {
         'Authorization': 'Bearer {}'.format(access_token),
         }
-                    
-        filename = 'data/participants/intensiv_participants.csv'
-        
 
         if os.path.exists(filename) == True:
             students = list()
@@ -186,7 +186,7 @@ def get_specific_project_complеtion_info(access_token, project_id, project_name
             new_students = students[:len(students) - 1]
 
             try:
-                with open(f'data/tasks/{project_name}/{project_name}.csv', 'w+') as file:
+                with open(f'data/tasks/{week}/{project_name}/{project_name}.csv', "w+") as file:
                     file.write('student,title,type,status,final score\n')
                     for i in range(len(new_students)):
                             response = requests.get(BASE_URL.format(f"/participants/{new_students[i]}/projects/{project_id}"), headers=HEADERS)
@@ -240,7 +240,7 @@ def sort_task_data(filename):
 
         scored_didnt_pass_result = sorted(scored_didnt_pass, key=lambda item: int(item.split(',')[-1]), reverse=True)
 
-        scored_hundred_percent = [student for student in passed_students if int(student.split(',')[-1]) == 100]
+        scored_hundred_percent = [student for student in passed_students if int(student.split(',')[-1]) >= 100]
 
         acceptance_rate = (len(passed_students) / len(new_students)) * 100
 
@@ -251,7 +251,8 @@ def sort_task_data(filename):
 # def report_during_exam():
 
 def task_report(task):
-        passed_students, _, scored_didnt_pass, scored_hundred_percent, num_of_students, acceptance_rate, in_progress, in_reviews, registered = sort_task_data(f'data/tasks/{task}/{task}.csv')
+        _, week = TASKS_INTENSIVE[task]
+        passed_students, _, scored_didnt_pass, scored_hundred_percent, num_of_students, acceptance_rate, in_progress, in_reviews, registered = sort_task_data(f'data/tasks/{week}/{task}/{task}.csv')
 
         passed_students_usernames = [student.split(',')[0] for student in passed_students]
         scored_hundred_percent_usernames = [student.split(',')[0] for student in scored_hundred_percent]
@@ -260,7 +261,7 @@ def task_report(task):
         in_reviews_usernames = [student.split(',')[0] for student in in_reviews] 
         registered_usernames = [student.split(',')[0] for student in registered] 
 
-        with open(f"data/tasks/{task}/task_report.txt", "w+") as file:
+        with open(f"data/tasks/{week}/{task}/task_report.txt", "w+") as file:
             file.write(f"Репорт:\n\n")
             if len(in_progress) != 0:
                 file.write(f"{len(in_reviews)} записались на проэкт\n")
@@ -268,6 +269,119 @@ def task_report(task):
                 file.write(f"{len(in_reviews)} сейчас делают проэкт\n")
             if len(in_reviews) != 0:
                 file.write(f"{len(in_reviews)} завершили проэкт и сейчас проходят проверку\n")
+            if len(passed_students) != 0:
+                file.write(f"Из {num_of_students} учеников только {len(passed_students)} смогли сдать этот проэкт!\n\n")
+            if len(scored_didnt_pass) != 0:
+                file.write(f"{len(scored_didnt_pass)} сделали хотя бы одно задание, но не смогли сдать проэкт\n\n")
+            if len(passed_students) != 0:
+                file.write("Поздравления всем сдавшим ребятам!\n\n")
+
+        if len(passed_students) != 0:
+            with open(f"data/tasks/{week}/{task}/details/passed_students.csv", "w+") as file1:
+                file1.write(f"USERNAMES,TOTAL NUMBER: {len(passed_students)},ACCEPTANCE RATE: {acceptance_rate:.2f}%\n")
+                for student in passed_students_usernames:
+                    file1.write(f"{student}\n")
+
+        if len(scored_hundred_percent) != 0:
+            with open(f"data/tasks/{week}/{task}/details/scored_hundred.csv", "w+") as file1:
+                file1.write(f"USERNAMES,TOTAL NUMBER: {len(scored_hundred_percent)}\n")
+                for student in scored_hundred_percent_usernames:
+                    file1.write(f"{student}\n")
+
+        if len(scored_didnt_pass) != 0:
+            with open(f"data/tasks/{week}/{task}/details/scored_didnt_pass.csv", "w+") as file1:
+                file1.write(f"USERNAMES,TOTAL NUMBER: {len(scored_didnt_pass)}\n")
+                for student in scored_didnt_pass_usernames:
+                    file1.write(f"{student}\n")
+
+        if len(in_progress) != 0:
+            with open(f"data/tasks/{week}/{task}/details/in_progress.csv", "w+") as file1:
+                file1.write(f"USERNAMES,TOTAL NUMBER: {len(in_progress_usernames)}\n")
+                for student in in_progress_usernames:
+                    file1.write(f"{student}\n")
+
+        if len(in_reviews) != 0:
+            with open(f"data/tasks/{week}/{task}/details/in_reviews.csv", "w+") as file1:
+                file1.write(f"USERNAMES,TOTAL NUMBER: {len(in_reviews_usernames)}\n")
+                for student in in_reviews_usernames:
+                    file1.write(f"{student}\n")
+
+        if len(registered) != 0:
+            with open(f"data/tasks/{week}/{task}/details/registered.csv", "w+") as file1:
+                file1.write(f"USERNAMES,,TOTAL NUMBER: {len(registered_usernames)}\n")
+                for student in registered_usernames:
+                    file1.write(f"{student}\n")
+
+
+
+def sort_exam_data_before(task):
+    try:
+        if os.path.exists(task) == False:
+            raise Exception(f'There is no task file in this folder! {task}')
+        
+        students = list()
+        
+        with open(task, 'r') as file:
+            line = file.readline()
+            while line:
+                line = file.readline()
+                students.append(line.strip())
+
+        new_students = students[:len(students) - 1]
+
+        _, week  = TASKS_INTENSIVE[task]
+
+        registered = [new_students[i] for i in range(len(new_students)) if new_students[i].split(',')[3] == 'REGISTERED']
+        registered_needed_data = [[student.split(",")[0], student.split(",")[1], student.split((",")[2])] for student in registered]
+
+        with open(f"data/tasks/{week}/{task}/details/registered.csv", "w+") as file1:
+            file1.write(f"student,title,status,total registered: {len(registered_needed_data)}\n")
+            for student in registered_needed_data:
+                username, title, status = student
+                file1.write(f"{username},{title},{status}\n")
+
+        return tuple(registered)
+    except Exception:
+        raise Exception
+    
+def sort_exam_data_during(task):
+    try:
+        if os.path.exists(task) == False:
+            raise Exception(f'There is no task file in this folder! {task}')
+        
+        registered_students = list()
+        
+        with open(task, 'r') as file:
+            line = file.readline()
+            while line:
+                line = file.readline()
+                registered_students.append(line.strip())
+
+        new_registered_students = registered_students[:len(registered_students) - 1]
+
+        _, week  = TASKS_INTENSIVE[task]
+
+        in_progress_students = [[student.split(",")[0], student.split(",")[1], student.split((",")[2])] for student in new_registered_students if student.split(",")[2] == "IN_PROGRESS"]
+
+        with open(f"data/tasks/{week}/{task}/details/in_progress.csv") as file1:
+            file1.write(f"student,title,status,total in progress: {len(in_progress_students)}\n")
+            for student in in_progress_students:
+                username, title, status = student
+                file1.write(f"{username},{title},{status}\n")
+
+        return tuple(in_progress_students)
+    except Exception:
+        raise Exception
+    
+def exam_report(task):
+        passed_students, _, scored_didnt_pass, scored_hundred_percent, num_of_students, acceptance_rate, _, _, _ = sort_task_data(f'data/tasks/{task}/{task}.csv')
+
+        passed_students_usernames = [student.split(',')[0] for student in passed_students]
+        scored_hundred_percent_usernames = [student.split(',')[0] for student in scored_hundred_percent]
+        scored_didnt_pass_usernames = [student.split(',')[0] for student in scored_didnt_pass]  
+
+        with open(f"data/tasks/{task}/task_report.txt", "w+") as file:
+            file.write(f"Репорт:\n\n")
             if len(passed_students) != 0:
                 file.write(f"Из {num_of_students} учеников только {len(passed_students)} смогли сдать этот проэкт!\n\n")
             if len(scored_didnt_pass) != 0:
@@ -290,38 +404,6 @@ def task_report(task):
             for student in scored_didnt_pass_usernames:
                 file1.write(f"{student}\n")
 
-        with open(f"data/tasks/{task}/details/in_progress.csv", "w+") as file1:
-            file1.write(f"USERNAMES,TOTAL NUMBER: {len(in_progress)}\n")
-            for student in in_progress_usernames:
-                file1.write(f"{student}\n")
-
-        with open(f"data/tasks/{task}/details/in_reviews.csv", "w+") as file1:
-            file1.write(f"USERNAMES,TOTAL NUMBER: {len(in_reviews)}\n")
-            for student in in_reviews_usernames:
-                file1.write(f"{student}\n")
-
-        with open(f"data/tasks/{task}/details/registered.csv", "w+") as file1:
-            file1.write(f"USERNAMES,,TOTAL NUMBER: {len(registered)}\n")
-            for student in registered_usernames:
-                file1.write(f"{student}\n")
-
-            # file.write(f"""Детали:\n\nCдавшие проэкт: {", ".join(passed_students_usernames)}\n\nНабравшие 100 из 100 баллов: {", ".join(scored_hundred_percent_usernames)}\n\nРешившие хотя-бу одну проблему, но не смогли пройти: {", ".join(scored_didnt_pass_usernames)}\n\nПроцент проходимости экзамена: {acceptance_rate:.2f}%""")
-
-
-# def report_after_exam(task):
-#         passed_students, _, scored_didnt_pass, scored_hundred_percent, num_of_students, acceptance_rate, in_progress, in_reviews, registered = sort_task_data(f'data/tasks/{task}/{task}.csv')
-
-#         passed_students_usernames = [student.split(',')[0] for student in passed_students]
-#         scored_hundred_percent_usernames = [student.split(',')[0] for student in scored_hundred_percent]
-#         scored_didnt_pass_usernames = [student.split(',')[0] for student in scored_didnt_pass] 
-
-#         with open(f"data/tasks/{task}/report_after_exam.txt", "w+") as file:
-
-#             file.write(f"""Репорт:\n\nИз {num_of_students} учеников только {len(passed_students)} смогли пройти экзамен!\n\n{len(scored_didnt_pass)} человек получили больше 0, но не смогли пройти экзамен\n\nПоздравления всем сдавшим ребятам!\n\n\n""")
-
-#             file.write(f"""Детали:\n\nCдавшие экзамен: {", ".join(passed_students_usernames)}\n\nНабравшие 100 из 100 баллов: {", ".join(scored_hundred_percent_usernames)}\n\nРешившие хотя-бу одну проблему, но не смогли пройти: {", ".join(scored_didnt_pass_usernames)}\n\nПроцент проходимости экзамена: {acceptance_rate:.2f}%""")
-
-
 
 def main():
     if len(sys.argv) > 1:
@@ -332,6 +414,8 @@ def main():
 
         get_api_token()
         token = get_file_token()
+    
+        project_id, week = TASKS_INTENSIVE[f'{task}']
 
         if os.path.exists('data/campuses/campuses.csv') == False:
             get_list_of_campuses_api(token)
@@ -345,14 +429,35 @@ def main():
         if os.path.exists('data/participants/intensiv_participants.csv') == False:
             get_all_intensiv_participants_api(token)
 
-        if os.path.exists(f'data/tasks/{task}/{task}.csv') == False:
-            project_id = TASKS_INTENSIVE[f'{task}']
-            get_specific_project_complеtion_info(token, str(project_id), task)
+        if os.path.exists(f'data/tasks/{week}/{task}/{task}.csv') == False:
+            if os.path.exists(f"data/tasks/{week}/{task}/details/in_reviews.csv"):
+                get_specific_project_complеtion_info(token, str(project_id), week, task, f"data/tasks/{week}/{task}/details/in_reviews.csv")
+            else:
+                get_specific_project_complеtion_info(token, str(project_id), week, task, 'data/participants/intensiv_participants.csv')
 
         if sys.argv[1].startswith('P') or sys.argv[1].startswith('T'):
             if os.path.exists(f'data/tasks/{task}/task_report.txt') == False:
-                project_id = TASKS_INTENSIVE[f'{task}']
                 task_report(task)
+        else:
+            if os.path.exists(f"data/tasks/{week}/{task}/details/registered.csv") == False:
+                sort_exam_data_before(f"data/tasks/{task}/{task}.csv")
+            elif os.path.exists(f"data/tasks/{week}/{task}/"):
+                # Get current time in Tashkent
+                tashkent_timezone = pytz.timezone("Asia/Tashkent")  # Or appropriate IANA timezone name
+                now = datetime.datetime.now(tashkent_timezone)
+
+                # Check if it's Friday and after 2:30 PM
+                if now.weekday() == 4 and now.hour >= 14 and now.minute >= 30:  # Friday is 4 (Monday is 0)
+                    sort_exam_data_during(f"data/tasks/{week}/{task}/details/registered.csv")
+            elif os.path.exists(f"data/tasks/{week}/{task}/"):
+                # Get current time in Tashkent
+                tashkent_timezone = pytz.timezone("Asia/Tashkent")  # Or appropriate IANA timezone name
+                now = datetime.datetime.now(tashkent_timezone)
+
+                # Check if it's Friday and after 6:30 PM
+                if now.weekday() == 4 and now.hour >= 18 and now.minute >= 30:  # Friday is 4 (Monday is 0)
+                    get_specific_project_complеtion_info(token, str(project_id), week, task, 'data/participants/intensiv_participants.csv')
+        
 
 
 

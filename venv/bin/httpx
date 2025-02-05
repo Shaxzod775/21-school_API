@@ -1,4 +1,4 @@
-#!/mnt/d/pet/21-school_API/venv/bin/python3
+#!/home/glassole/Documents/21-school_API/venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys
