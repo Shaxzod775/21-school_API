@@ -222,8 +222,11 @@ def sort_task_data(filename):
 
         new_students = students[:len(students) - 1]
 
+        registered = [new_students[i] for i in range(len(new_students)) if new_students[i].split(',')[3] == 'REGISTERED']
         passed_students = [new_students[i] for i in range(len(new_students)) if new_students[i].split(',')[3] == 'ACCEPTED']
         failed_students = [new_students[i] for i in range(len(new_students)) if new_students[i].split(',')[3] == 'FAILED']
+        in_progress = [new_students[i] for i in range(len(new_students)) if new_students[i].split(',')[3] == 'IN_PROGRESS']
+        in_reviews = [new_students[i] for i in range(len(new_students)) if new_students[i].split(',')[3] == 'IN_REVIEWS']
 
         scored_didnt_pass = list()
 
@@ -234,30 +237,89 @@ def sort_task_data(filename):
                 if int(score) < 50 and status != 'ACCEPTED':
                     scored_didnt_pass.append(new_students[i])
 
+
         scored_didnt_pass_result = sorted(scored_didnt_pass, key=lambda item: int(item.split(',')[-1]), reverse=True)
 
         scored_hundred_percent = [student for student in passed_students if int(student.split(',')[-1]) == 100]
 
         acceptance_rate = (len(passed_students) / len(new_students)) * 100
 
-        return passed_students, failed_students, scored_didnt_pass_result, scored_hundred_percent, len(new_students), acceptance_rate
+        return passed_students, failed_students, scored_didnt_pass_result, scored_hundred_percent, len(new_students), acceptance_rate, in_progress, in_reviews, registered
     except Exception:
         raise Exception
 
 # def report_during_exam():
 
-def report_after_exam(task):
-        passed_students, _, scored_didnt_pass, scored_hundred_percent, num_of_students, acceptance_rate = sort_task_data(f'data/tasks/{task}/{task}.csv')
+def task_report(task):
+        passed_students, _, scored_didnt_pass, scored_hundred_percent, num_of_students, acceptance_rate, in_progress, in_reviews, registered = sort_task_data(f'data/tasks/{task}/{task}.csv')
 
         passed_students_usernames = [student.split(',')[0] for student in passed_students]
         scored_hundred_percent_usernames = [student.split(',')[0] for student in scored_hundred_percent]
         scored_didnt_pass_usernames = [student.split(',')[0] for student in scored_didnt_pass] 
+        in_progress_usernames = [student.split(',')[0] for student in in_progress] 
+        in_reviews_usernames = [student.split(',')[0] for student in in_reviews] 
+        registered_usernames = [student.split(',')[0] for student in registered] 
 
-        with open(f"data/tasks/{task}/report_after_exam.txt", "w+") as file:
+        with open(f"data/tasks/{task}/task_report.txt", "w+") as file:
+            file.write(f"Репорт:\n\n")
+            if len(in_progress) != 0:
+                file.write(f"{len(in_reviews)} записались на проэкт\n")
+            if len(in_progress) != 0:
+                file.write(f"{len(in_reviews)} сейчас делают проэкт\n")
+            if len(in_reviews) != 0:
+                file.write(f"{len(in_reviews)} завершили проэкт и сейчас проходят проверку\n")
+            if len(passed_students) != 0:
+                file.write(f"Из {num_of_students} учеников только {len(passed_students)} смогли сдать этот проэкт!\n\n")
+            if len(scored_didnt_pass) != 0:
+                file.write(f"{len(scored_didnt_pass)} сделали хотя бы одно задание, но не смогли сдать проэкт\n\n")
+            if len(passed_students) != 0:
+                file.write("Поздравления всем сдавшим ребятам!\n\n")
 
-            file.write(f"""Репорт:\n\nИз {num_of_students} учеников только {len(passed_students)} смогли пройти экзамен!\n\n{len(scored_didnt_pass)} человек получили больше 0, но не смогли пройти экзамен\n\nПоздравления всем сдавшим ребятам!\n\n\n""")
+        with open(f"data/tasks/{task}/details/passed_students.csv", "w+") as file1:
+            file1.write(f"USERNAMES,TOTAL NUMBER: {len(passed_students)},ACCEPTANCE RATE: {acceptance_rate:.2f}%\n")
+            for student in passed_students_usernames:
+                file1.write(f"{student}\n")
 
-            file.write(f"""Детали:\n\nCдавшие экзамен: {", ".join(passed_students_usernames)}\n\nНабравшие 100 из 100 баллов: {", ".join(scored_hundred_percent_usernames)}\n\nРешившие хотя-бу одну проблему, но не смогли пройти: {", ".join(scored_didnt_pass_usernames)}\n\nПроцент проходимости экзамена: {acceptance_rate:.2f}%""")
+        with open(f"data/tasks/{task}/details/scored_hundred.csv", "w+") as file1:
+            file1.write(f"USERNAMES,TOTAL NUMBER: {len(scored_hundred_percent)}\n")
+            for student in scored_hundred_percent_usernames:
+                file1.write(f"{student}\n")
+
+        with open(f"data/tasks/{task}/details/scored_didnt_pass.csv", "w+") as file1:
+            file1.write(f"USERNAMES,TOTAL NUMBER: {len(scored_didnt_pass)}\n")
+            for student in scored_didnt_pass_usernames:
+                file1.write(f"{student}\n")
+
+        with open(f"data/tasks/{task}/details/in_progress.csv", "w+") as file1:
+            file1.write(f"USERNAMES,TOTAL NUMBER: {len(in_progress)}\n")
+            for student in in_progress_usernames:
+                file1.write(f"{student}\n")
+
+        with open(f"data/tasks/{task}/details/in_reviews.csv", "w+") as file1:
+            file1.write(f"USERNAMES,TOTAL NUMBER: {len(in_reviews)}\n")
+            for student in in_reviews_usernames:
+                file1.write(f"{student}\n")
+
+        with open(f"data/tasks/{task}/details/registered.csv", "w+") as file1:
+            file1.write(f"USERNAMES,,TOTAL NUMBER: {len(registered)}\n")
+            for student in registered_usernames:
+                file1.write(f"{student}\n")
+
+            # file.write(f"""Детали:\n\nCдавшие проэкт: {", ".join(passed_students_usernames)}\n\nНабравшие 100 из 100 баллов: {", ".join(scored_hundred_percent_usernames)}\n\nРешившие хотя-бу одну проблему, но не смогли пройти: {", ".join(scored_didnt_pass_usernames)}\n\nПроцент проходимости экзамена: {acceptance_rate:.2f}%""")
+
+
+# def report_after_exam(task):
+#         passed_students, _, scored_didnt_pass, scored_hundred_percent, num_of_students, acceptance_rate, in_progress, in_reviews, registered = sort_task_data(f'data/tasks/{task}/{task}.csv')
+
+#         passed_students_usernames = [student.split(',')[0] for student in passed_students]
+#         scored_hundred_percent_usernames = [student.split(',')[0] for student in scored_hundred_percent]
+#         scored_didnt_pass_usernames = [student.split(',')[0] for student in scored_didnt_pass] 
+
+#         with open(f"data/tasks/{task}/report_after_exam.txt", "w+") as file:
+
+#             file.write(f"""Репорт:\n\nИз {num_of_students} учеников только {len(passed_students)} смогли пройти экзамен!\n\n{len(scored_didnt_pass)} человек получили больше 0, но не смогли пройти экзамен\n\nПоздравления всем сдавшим ребятам!\n\n\n""")
+
+#             file.write(f"""Детали:\n\nCдавшие экзамен: {", ".join(passed_students_usernames)}\n\nНабравшие 100 из 100 баллов: {", ".join(scored_hundred_percent_usernames)}\n\nРешившие хотя-бу одну проблему, но не смогли пройти: {", ".join(scored_didnt_pass_usernames)}\n\nПроцент проходимости экзамена: {acceptance_rate:.2f}%""")
 
 
 
@@ -287,9 +349,11 @@ def main():
             project_id = TASKS_INTENSIVE[f'{task}']
             get_specific_project_complеtion_info(token, str(project_id), task)
 
-        if os.path.exists(f'data/tasks/{task}/report.txt') == False:
-            project_id = TASKS_INTENSIVE[f'{task}']
-            report_after_exam(task)
+        if sys.argv[1].startswith('P') or sys.argv[1].startswith('T'):
+            if os.path.exists(f'data/tasks/{task}/task_report.txt') == False:
+                project_id = TASKS_INTENSIVE[f'{task}']
+                task_report(task)
+
 
 
 
