@@ -1,10 +1,10 @@
+import telegram.constants
+import re
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputFile, InputMediaPhoto
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, CallbackContext
-from db import *  # Make sure this import is correct
+from db import *  
 from config import *
 
-
-TOKEN = '7168050647:AAFvWtm2G-qslN1U6K4zv1Y8L7CyhYXs8R0'  # **REPLACE with your actual token**
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     chat_id = update.effective_user.id
@@ -58,11 +58,11 @@ async def country_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     country = query.data.split('_')[1]
 
     if country == "uzb":
-        keyboard_campuses_uzb = [  # Use separate variable names
+        keyboard_campuses_uzb = [ 
             [InlineKeyboardButton("Ташкент", callback_data='campus_tashkent')],
             [InlineKeyboardButton("Самарканд", callback_data='campus_samarkand')]
         ]
-        reply_markup_campuses = InlineKeyboardMarkup(keyboard_campuses_uzb)  # Use the correct markup
+        reply_markup_campuses = InlineKeyboardMarkup(keyboard_campuses_uzb) 
         await query.edit_message_text(text="Choose your campus in Uzbekistan:", reply_markup=reply_markup_campuses)
 
     elif country == "russia":
@@ -97,12 +97,12 @@ async def campus_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     context.user_data['campus'] = campus
 
     keyboard_streams = [ 
-        [InlineKeyboardButton("Osnova", callback_data='stream_osnova')],
-        [InlineKeyboardButton("Intensiv", callback_data='stream_intensiv')],
+        [InlineKeyboardButton("Основа", callback_data='stream_osnova')],
+        [InlineKeyboardButton("Интенсив", callback_data='stream_intensiv')],
     ]
     reply_markup_streams = InlineKeyboardMarkup(keyboard_streams)  
 
-    await query.edit_message_text(f"You selected {campus} campus. Now select your stream", reply_markup=reply_markup_streams)
+    await query.edit_message_text(f"Вы выбрали кампус {campus}. Теперь пожалуйста выберите ваш поток", reply_markup=reply_markup_streams)
 
 
 async def stream_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -117,41 +117,15 @@ async def stream_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     await show_main_options(update, context)
 
 
-# async def show_main_options(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-#     if update == None:
-#         raise Exception(f"{update}")
-    
-#     chat_id = update.effective_user.id
-#     context.user_data['chatId'] = chat_id
-
-#     context.user_data['chatId'] = update.effective_user.id
-#     context.user_data['chatId'] = chat_id
-    
-#     image_path = "./images/21_school_logo.jpg"
-#     caption = "Welcome back to the bot!"
-
-#     keyboard = [
-#         [InlineKeyboardButton("Статистика по заданиям", callback_data='stats')],
-#         [InlineKeyboardButton("Язык", callback_data='change_language')],
-#         [InlineKeyboardButton("Кампус", callback_data='change_campus')],
-#         [InlineKeyboardButton("Поток", callback_data='change_stream')]
-#     ]
-#     reply_markup = InlineKeyboardMarkup(keyboard)
-
-#     try:
-#         with open(image_path, "rb") as image_file:
-#             await update.message.reply_photo(photo=InputFile(image_file), caption=caption, reply_markup=reply_markup)
-#     except FileNotFoundError:
-#         await update.message.reply_text("Image not found!") 
-    
-
-
 async def show_main_options(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     chat_id = update.effective_user.id
     context.user_data['chatId'] = chat_id
 
     image_path = "./images/21_school_logo.jpg"
-    caption = "Welcome back to the bot!"
+    url = "https://edu.21-school.ru/profile/glassole"
+    username = "glassole"
+
+    caption = f"Создатель бота @shaxzod\_710 \(ник в школе [{username}]({url})\)"
 
     keyboard = [
         [InlineKeyboardButton("Статистика по заданиям", callback_data='stats')],
@@ -165,23 +139,35 @@ async def show_main_options(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
     try:
         with open(image_path, "rb") as image_file:
+            input_file = InputFile(image_file)  # Read file only once
+
             if update.callback_query:  
-                try:
-                    chat_id = update.effective_chat.id
-                    await context.bot.send_photo(photo=InputFile(image_file), caption=caption, reply_markup=reply_markup, chat_id=chat_id)
-                except Exception as e:
-                    print(f"An error occurred while updating the media.\n{e}")
+                chat_id = update.effective_chat.id
+                await context.bot.send_photo(
+                    chat_id=chat_id, 
+                    photo=input_file, 
+                    caption=caption, 
+                    reply_markup=reply_markup, 
+                    parse_mode=telegram.constants.ParseMode.MARKDOWN_V2
+                )
             elif update.message: 
-                await update.message.reply_photo(photo=InputFile(image_file), caption=caption, reply_markup=reply_markup)
+                await update.message.reply_photo(
+                    photo=input_file, 
+                    caption=caption, 
+                    reply_markup=reply_markup, 
+                    parse_mode=telegram.constants.ParseMode.MARKDOWN_V2
+                )
             else:
                 print("An error occurred. Please try again.")
+
     except FileNotFoundError:
+        error_text = "Image not found!"
         if update.callback_query:
-            await update.callback_query.edit_message_text("Image not found!")
+            await update.callback_query.edit_message_text(error_text)
         elif update.message:
-            await update.message.reply_text("Image not found!")
+            await update.message.reply_text(error_text)
         else:
-            await context.bot.send_message(chat_id=chat_id, text="Image not found!")
+            await context.bot.send_message(chat_id=chat_id, text=error_text)
 
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

@@ -186,7 +186,7 @@ def get_specific_project_complеtion_info(access_token, project_id, project_name
             new_students = students[:len(students) - 1]
 
             try:
-                with open(f'data/tasks/{project_name}.csv', 'w+') as file:
+                with open(f'data/tasks/{project_name}/{project_name}.csv', 'w+') as file:
                     file.write('student,title,type,status,final score\n')
                     for i in range(len(new_students)):
                             response = requests.get(BASE_URL.format(f"/participants/{new_students[i]}/projects/{project_id}"), headers=HEADERS)
@@ -244,17 +244,32 @@ def sort_task_data(filename):
     except Exception:
         raise Exception
 
+# def report_during_exam():
+
+def report_after_exam(task):
+        passed_students, _, scored_didnt_pass, scored_hundred_percent, num_of_students, acceptance_rate = sort_task_data(f'data/tasks/{task}/{task}.csv')
+
+        passed_students_usernames = [student.split(',')[0] for student in passed_students]
+        scored_hundred_percent_usernames = [student.split(',')[0] for student in scored_hundred_percent]
+        scored_didnt_pass_usernames = [student.split(',')[0] for student in scored_didnt_pass] 
+
+        with open(f"data/tasks/{task}/report_after_exam.txt", "w+") as file:
+
+            file.write(f"""Репорт:\n\nИз {num_of_students} учеников только {len(passed_students)} смогли пройти экзамен!\n\n{len(scored_didnt_pass)} человек получили больше 0, но не смогли пройти экзамен\n\nПоздравления всем сдавшим ребятам!\n\n\n""")
+
+            file.write(f"""Детали:\n\nCдавшие экзамен: {", ".join(passed_students_usernames)}\n\nНабравшие 100 из 100 баллов: {", ".join(scored_hundred_percent_usernames)}\n\nРешившие хотя-бу одну проблему, но не смогли пройти: {", ".join(scored_didnt_pass_usernames)}\n\nПроцент проходимости экзамена: {acceptance_rate:.2f}%""")
+
+
 
 def main():
-
     if len(sys.argv) > 1:
+        if sys.argv[1] not in TASKS_INTENSIVE:
+            raise Exception(f"The entered tasks is not among the intensive tasks")
+
         task = sys.argv[1]
 
-        if os.path.exists('token.txt') == False:
-            token = get_api_token()
-        else:
-            token = get_file_token()
-
+        get_api_token()
+        token = get_file_token()
 
         if os.path.exists('data/campuses/campuses.csv') == False:
             get_list_of_campuses_api(token)
@@ -268,19 +283,14 @@ def main():
         if os.path.exists('data/participants/intensiv_participants.csv') == False:
             get_all_intensiv_participants_api(token)
 
-        if os.path.exists(f'data/participants/{task}.csv') == False:
-            get_specific_project_complеtion_info(token, '19157', task)
+        if os.path.exists(f'data/tasks/{task}/{task}.csv') == False:
+            project_id = TASKS_INTENSIVE[f'{task}']
+            get_specific_project_complеtion_info(token, str(project_id), task)
 
+        if os.path.exists(f'data/tasks/{task}/report.txt') == False:
+            project_id = TASKS_INTENSIVE[f'{task}']
+            report_after_exam(task)
 
-        passed_students, _, scored_didnt_pass, scored_hundred_percent, num_of_students, acceptance_rate = sort_task_data(f'data/tasks/{task}.csv')
-
-        passed_students_usernames = [student.split(',')[0] for student in passed_students]
-        scored_hundred_percent_usernames = [student.split(',')[0] for student in scored_hundred_percent]
-        scored_didnt_pass_usernames = [student.split(',')[0] for student in scored_didnt_pass]
-
-        print(f"""Summary:\nOut of {num_of_students} only {len(passed_students)} passed the exam and {len(scored_didnt_pass)} got more than 0, but did not manage to pass\n\nCongratulations to {", ".join(passed_students_usernames)} these guys did great!\n""")
-
-        print(f"""Details:\nPassed students: {", ".join(passed_students_usernames)}\n\nScored 100 percent: {", ".join(scored_hundred_percent_usernames)}\n\nThose who scored something but did not pass: {", ".join(scored_didnt_pass_usernames)}\n\nPassing rate: {acceptance_rate:.2f}%""")
 
 
 if __name__ == '__main__':
