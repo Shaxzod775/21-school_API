@@ -210,10 +210,24 @@ def update_post(task, url_type, url):
     
     return updated
 
+def get_1():
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+
+    cursor.execute(f"SELECT * FROM users")
+    data = cursor.fetchall()
+
+    conn.close()  
+    print(data)
+
 
 if __name__ == '__main__':
     # drop_table("posts")
     init_table_posts()
+
+    get_1()
+
+
 
     # print(get_post("P01D06", "url_passed"))
 

@@ -238,12 +238,17 @@ async def change_language(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     query = update.callback_query
     await query.answer()
 
+    try:
+        language = get_data(update.effective_chat.id, 'language')
+    except KeyError as e:
+        raise KeyError(f"An error occured\n{e}")
+
     keyboard_language = [
         [InlineKeyboardButton("English", callback_data='changed_lang_english')],
         [InlineKeyboardButton("Русский", callback_data='changed_lang_russian')],
         [InlineKeyboardButton("O'zbek", callback_data='changed_lang_uzbek')],
-        [InlineKeyboardButton("Go back", callback_data='go_back')]
     ]
+    keyboard_language.append([KEYBOARDS['button']['stats']['keyboard'][language[0]][-1]])
 
     reply_markup_language = InlineKeyboardMarkup(keyboard_language)
 
@@ -386,6 +391,54 @@ async def show_specific_task_info(update: Update, context: ContextTypes.DEFAULT_
     await query.edit_message_reply_markup(reply_markup=reply_markup)
 
 
+async def change_campus(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    await query.answer()
+
+
+    campus = get_data(update.effective_chat.id, "campus")[0].capitalize()
+
+    try:
+        language = get_data(update.effective_chat.id, 'language')[0]
+    except KeyError as e:
+        raise KeyError(f"An error occured\n{e}")
+    
+    buttons = KEYBOARDS['change_campus']['keyboard'][language]
+    campuses = buttons[0]['text']
+    go_back = buttons[1]
+
+    keyboard = [
+       [InlineKeyboardButton(campuses[0], callback_data='changed_campus_tashkent')],
+       [InlineKeyboardButton(campuses[1], callback_data='changed_campus_samarkand')],   
+       [InlineKeyboardButton(go_back['text'], callback_data=go_back['callback_data'])]   
+    ]
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    caption = KEYBOARDS['change_campus']['caption'][language]
+
+    await query.edit_message_caption(caption=f"{caption} {campus}")
+    await query.edit_message_reply_markup(reply_markup=reply_markup)
+
+async def campus_changed(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    await query.answer()
+
+    campus = query.data.split("_")[-1]
+
+    update_user(update.effective_chat.id, campus=campus)
+
+    previous_markup = context.user_data.get('previous_markup')
+    if previous_markup:
+        chat_id = update.effective_chat.id
+        message_id = update.effective_message.id
+        await context.bot.delete_message(chat_id, message_id)
+        await show_main_options(update, context)
+
+
+
+
+
+
 
 def main():
     app = Application.builder().token(TOKEN).build()
@@ -398,6 +451,10 @@ def main():
 
     app.add_handler(CallbackQueryHandler(change_language, pattern=r"^change_language"))
     app.add_handler(CallbackQueryHandler(language_changed, pattern=r"^changed_lang_(english|russian|uzbek)$"))
+
+    app.add_handler(CallbackQueryHandler(change_campus, pattern=r"^change_campus"))
+    app.add_handler(CallbackQueryHandler(campus_changed, pattern=r"^changed_campus_(tashkent|samarkand)$"))
+
 
     app.add_handler(CallbackQueryHandler(button, pattern=r"(stats|go_back)$"))
 

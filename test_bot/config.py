@@ -104,14 +104,26 @@ KEYBOARDS = {
     },
     "show_main_options" : {
         "keyboard": {
-            "english": [{"text":"Task Statistics", "callback_data" : "stats"}, {"text": "Language", "callback_data": "change_language"}, {"text": "Campus", "callback_data": "change_campus"}, {"text": "Stream", "callback_data": "stream"}],
-            "russian": [{"text":"Статистика по заданиям", "callback_data" : "stats"}, {"text": "Язык", "callback_data": "change_language"}, {"text": "Кампус", "callback_data": "change_campus"}, {"text": "Поток", "callback_data": "Поток"}],
-            "uzbek": [{"text":"Topshiriqlar statistikasi", "callback_data" : "stats"}, {"text": "Til", "callback_data": "change_language"}, {"text": "Kampus", "callback_data": "change_campus"}, {"text": "Oqim", "callback_data": "oqim"}]
+            "english": [{"text":"Task Statistics", "callback_data" : "stats"}, {"text": "Language", "callback_data": "change_language"}, {"text": "Campus", "callback_data": "change_campus"}],
+            "russian": [{"text":"Статистика по заданиям", "callback_data" : "stats"}, {"text": "Язык", "callback_data": "change_language"}, {"text": "Кампус", "callback_data": "change_campus"}],
+            "uzbek": [{"text":"Topshiriqlar statistikasi", "callback_data" : "stats"}, {"text": "Til", "callback_data": "change_language"}, {"text": "Kampus", "callback_data": "change_campus"}]
         },
         "caption": {  
             "english": "This bot was created to track statistics in the School 21 campuses in Uzbekistan",  
             "russian": "Бот создан для ведения статистики в кампусах школы 21 в Узбекистане", 
             "uzbek": "Bu bot O'zbekistondagi 21\-maktab kampuslari statistika yuritish uchun yaratilgan" 
+        }
+    },
+    "change_campus" : {
+        "keyboard": {
+            "english": [{"text":["Tashkent", "Samarkand"]}, {"text": "Go Back", "callback_data": "go_back"}],
+            "russian": [{"text":["Ташкент", "Самарканд"]}, {"text": "Назад", "callback_data": "go_back"}],
+            "uzbek": [{"text":["Toshkent", "Samarqand"]}, {"text": "Ortga", "callback_data": "go_back"}],
+        },
+        "caption": {
+            "english": "The campus you chose is",
+            "russian": "Выбранный вами кампус:",
+            "uzbek": "Siz tanlagan kampus:",
         }
     },
     "button" : {
@@ -123,5 +135,15 @@ KEYBOARDS = {
             }
         }
     },
+    "show_specific_task_info": {
+        "stats" : {
+            "keyboard": {
+                "english": [{"text":"1 week", "callback_data" : "stats_intensive_week_1"}, {"text":"2 week", "callback_data" : "stats_intensive_week_2"}, {"text":"3 week", "callback_data" : "stats_intensive_week_3"}, {"text":"4 week", "callback_data" : "stats_intensive_week_4"}, {"text": "Go Back", "callback_data": "go_back"}],
+                "russian": [{"text":"1 неделя", "callback_data" : "stats_intensive_week_1"}, {"text":"2 неделя", "callback_data" : "stats_intensive_week_2"}, {"text":"3 неделя", "callback_data" : "stats_intensive_week_3"}, {"text":"4 неделя", "callback_data" : "stats_intensive_week_4"}, {"text": "Назад", "callback_data": "go_back"}],
+                "uzbek": [{"text":"1 hafta", "callback_data" : "stats_intensive_week_1"}, {"text":"2 hafta", "callback_data" : "stats_intensive_week_2"}, {"text":"3 hafta", "callback_data" : "stats_intensive_week_3"}, {"text":"4 hafta", "callback_data" : "stats_intensive_week_4"}, {"text": "Ortga", "callback_data": "go_back"}],
+            }
+        }
+    },
+
 }
 
