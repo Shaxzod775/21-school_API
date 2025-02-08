@@ -6,7 +6,7 @@ HEADERS =  {
     'Authorization': 'Bearer {}'
 }
 
-TASKS_INTENSIVE = {
+INTENSIVE = {
     # FIRST WEEK
     'T01D01': (19153, '1_week'),
     'T02D02': (19154, '1_week'),

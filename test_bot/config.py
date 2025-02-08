@@ -1,4 +1,4 @@
-TASKS_INTENSIVE = {
+TASKS_INTENSIVE_BOT = {
     # FIRST WEEK
     'T01D01': 19153,
     'T02D02': 19154,
@@ -62,3 +62,66 @@ FOURTH_WEEK_INTENSIVE = {
 }
 
 TOKEN = '7168050647:AAFvWtm2G-qslN1U6K4zv1Y8L7CyhYXs8R0' 
+TELEGRAPH_TOKEN = 'b0994b00bcab357cdb5a579123e57c7484db31abe61e06d83775bb4abe6d'
+
+
+KEYBOARDS = {
+    "language_selected": { 
+        "keyboard": {
+            "english": ["Uzbekistan"],
+            "russian": ["Узбекистан"],
+            "uzbek": ["Oʻzbekiston"]
+        },
+        "message": {  
+            "english": "You chose English. Now, please choose your country",  
+            "russian": "Вы выбрали Русский. Теперь, пожалуйста, выберите вашу страну", 
+            "uzbek": "Siz o'zbek tilini tanladingiz. Endi, iltimos, o'z mamlakatingizni tanlang." 
+        }
+    },
+    "country_selected" : {
+        "keyboard": {
+            "english": ["Tashkent", "Samarkand"],
+            "russian": ["Ташкент", "Самарканд"],
+            "uzbek": ["Toshkent", "Samarqand"]
+        },
+        "message": {  
+            "english": "Choose your campus",  
+            "russian": "Выберите ваш кампус", 
+            "uzbek": "Kampusingizni tanlang" 
+        }
+    },
+    "campus_selected" : {
+        "keyboard": {
+            "english": ["Intensiv"],
+            "russian": ["Интенсив"],
+            "uzbek": ["Intensiv"]
+        },
+        "message": {  
+            "english": "Now, please choose your stage of education",  
+            "russian": "Теперь пожалуйста выберите ваш поток", 
+            "uzbek": "Endi, iltimos, o'z oqimingizni tanlang" 
+        }
+    },
+    "show_main_options" : {
+        "keyboard": {
+            "english": [{"text":"Task Statistics", "callback_data" : "stats"}, {"text": "Language", "callback_data": "change_language"}, {"text": "Campus", "callback_data": "change_campus"}, {"text": "Stream", "callback_data": "stream"}],
+            "russian": [{"text":"Статистика по заданиям", "callback_data" : "stats"}, {"text": "Язык", "callback_data": "change_language"}, {"text": "Кампус", "callback_data": "change_campus"}, {"text": "Поток", "callback_data": "Поток"}],
+            "uzbek": [{"text":"Topshiriqlar statistikasi", "callback_data" : "stats"}, {"text": "Til", "callback_data": "change_language"}, {"text": "Kampus", "callback_data": "change_campus"}, {"text": "Oqim", "callback_data": "oqim"}]
+        },
+        "caption": {  
+            "english": "This bot was created to track statistics in the School 21 campuses in Uzbekistan",  
+            "russian": "Бот создан для ведения статистики в кампусах школы 21 в Узбекистане", 
+            "uzbek": "Bu bot O'zbekistondagi 21\-maktab kampuslari statistika yuritish uchun yaratilgan" 
+        }
+    },
+    "button" : {
+        "stats" : {
+            "keyboard": {
+                "english": [{"text":"1 week", "callback_data" : "stats_intensive_week_1"}, {"text":"2 week", "callback_data" : "stats_intensive_week_2"}, {"text":"3 week", "callback_data" : "stats_intensive_week_3"}, {"text":"4 week", "callback_data" : "stats_intensive_week_4"}, {"text": "Go Back", "callback_data": "go_back"}],
+                "russian": [{"text":"1 неделя", "callback_data" : "stats_intensive_week_1"}, {"text":"2 неделя", "callback_data" : "stats_intensive_week_2"}, {"text":"3 неделя", "callback_data" : "stats_intensive_week_3"}, {"text":"4 неделя", "callback_data" : "stats_intensive_week_4"}, {"text": "Назад", "callback_data": "go_back"}],
+                "uzbek": [{"text":"1 hafta", "callback_data" : "stats_intensive_week_1"}, {"text":"2 hafta", "callback_data" : "stats_intensive_week_2"}, {"text":"3 hafta", "callback_data" : "stats_intensive_week_3"}, {"text":"4 hafta", "callback_data" : "stats_intensive_week_4"}, {"text": "Ortga", "callback_data": "go_back"}],
+            }
+        }
+    },
+}
+

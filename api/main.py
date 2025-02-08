@@ -1,13 +1,15 @@
 #!/../venv/bin/python3
 import os
 import sys
+
+sys.path.append("./")
+
 import requests
 import json
 import time
 import datetime
-import pytz 
-import subprocess
-from config import *
+import pytz
+from config_api import *
 
 
 def get_api_token():
@@ -251,7 +253,7 @@ def sort_task_data(filename):
 # def report_during_exam():
 
 def task_report(task):
-        _, week = TASKS_INTENSIVE[task]
+        _, week = INTENSIVE[task]
         passed_students, _, scored_didnt_pass, scored_hundred_percent, num_of_students, acceptance_rate, in_progress, in_reviews, registered = sort_task_data(f'data/tasks/{week}/{task}/{task}.csv')
 
         passed_students_usernames = [student.split(',')[0] for student in passed_students]
@@ -329,12 +331,15 @@ def sort_exam_data_before(task):
 
         new_students = students[:len(students) - 1]
 
-        _, week  = TASKS_INTENSIVE[task]
+        task_name = task.split('/')[-1].split('.')[0]
+
+        _, week  = INTENSIVE[task_name]
 
         registered = [new_students[i] for i in range(len(new_students)) if new_students[i].split(',')[3] == 'REGISTERED']
-        registered_needed_data = [[student.split(",")[0], student.split(",")[1], student.split((",")[2])] for student in registered]
 
-        with open(f"data/tasks/{week}/{task}/details/registered.csv", "w+") as file1:
+        registered_needed_data = [[student.split(",")[0], student.split(",")[1], student.split(",")[2]] for student in registered]
+
+        with open(f"data/tasks/{week}/{task_name}/details/registered.csv", "w+") as file1:
             file1.write(f"student,title,status,total registered: {len(registered_needed_data)}\n")
             for student in registered_needed_data:
                 username, title, status = student
@@ -343,44 +348,18 @@ def sort_exam_data_before(task):
         return tuple(registered)
     except Exception:
         raise Exception
-    
-def sort_exam_data_during(task):
-    try:
-        if os.path.exists(task) == False:
-            raise Exception(f'There is no task file in this folder! {task}')
-        
-        registered_students = list()
-        
-        with open(task, 'r') as file:
-            line = file.readline()
-            while line:
-                line = file.readline()
-                registered_students.append(line.strip())
 
-        new_registered_students = registered_students[:len(registered_students) - 1]
-
-        _, week  = TASKS_INTENSIVE[task]
-
-        in_progress_students = [[student.split(",")[0], student.split(",")[1], student.split((",")[2])] for student in new_registered_students if student.split(",")[2] == "IN_PROGRESS"]
-
-        with open(f"data/tasks/{week}/{task}/details/in_progress.csv") as file1:
-            file1.write(f"student,title,status,total in progress: {len(in_progress_students)}\n")
-            for student in in_progress_students:
-                username, title, status = student
-                file1.write(f"{username},{title},{status}\n")
-
-        return tuple(in_progress_students)
-    except Exception:
-        raise Exception
     
 def exam_report(task):
-        passed_students, _, scored_didnt_pass, scored_hundred_percent, num_of_students, acceptance_rate, _, _, _ = sort_task_data(f'data/tasks/{task}/{task}.csv')
+        print("exam_report is working!")
+        _, week = INTENSIVE[task]
+        passed_students, _, scored_didnt_pass, scored_hundred_percent, num_of_students, acceptance_rate, _, _, _ = sort_task_data(f'data/tasks/{week}/{task}/{task}.csv')
 
         passed_students_usernames = [student.split(',')[0] for student in passed_students]
         scored_hundred_percent_usernames = [student.split(',')[0] for student in scored_hundred_percent]
         scored_didnt_pass_usernames = [student.split(',')[0] for student in scored_didnt_pass]  
 
-        with open(f"data/tasks/{task}/task_report.txt", "w+") as file:
+        with open(f"data/tasks/{week}/{task}/task_report.txt", "w+") as file:
             file.write(f"Репорт:\n\n")
             if len(passed_students) != 0:
                 file.write(f"Из {num_of_students} учеников только {len(passed_students)} смогли сдать этот проэкт!\n\n")
@@ -389,17 +368,17 @@ def exam_report(task):
             if len(passed_students) != 0:
                 file.write("Поздравления всем сдавшим ребятам!\n\n")
 
-        with open(f"data/tasks/{task}/details/passed_students.csv", "w+") as file1:
+        with open(f"data/tasks/{week}/{task}/details/passed_students.csv", "w+") as file1:
             file1.write(f"USERNAMES,TOTAL NUMBER: {len(passed_students)},ACCEPTANCE RATE: {acceptance_rate:.2f}%\n")
             for student in passed_students_usernames:
                 file1.write(f"{student}\n")
 
-        with open(f"data/tasks/{task}/details/scored_hundred.csv", "w+") as file1:
+        with open(f"data/tasks/{week}/{task}/details/scored_hundred.csv", "w+") as file1:
             file1.write(f"USERNAMES,TOTAL NUMBER: {len(scored_hundred_percent)}\n")
             for student in scored_hundred_percent_usernames:
                 file1.write(f"{student}\n")
 
-        with open(f"data/tasks/{task}/details/scored_didnt_pass.csv", "w+") as file1:
+        with open(f"data/tasks/{week}/{task}/details/scored_didnt_pass.csv", "w+") as file1:
             file1.write(f"USERNAMES,TOTAL NUMBER: {len(scored_didnt_pass)}\n")
             for student in scored_didnt_pass_usernames:
                 file1.write(f"{student}\n")
@@ -407,7 +386,7 @@ def exam_report(task):
 
 def main():
     if len(sys.argv) > 1:
-        if sys.argv[1] not in TASKS_INTENSIVE:
+        if sys.argv[1] not in INTENSIVE:
             raise Exception(f"The entered tasks is not among the intensive tasks")
 
         task = sys.argv[1]
@@ -415,7 +394,7 @@ def main():
         get_api_token()
         token = get_file_token()
     
-        project_id, week = TASKS_INTENSIVE[f'{task}']
+        project_id, week = INTENSIVE[f'{task}']
 
         if os.path.exists('data/campuses/campuses.csv') == False:
             get_list_of_campuses_api(token)
@@ -440,15 +419,7 @@ def main():
                 task_report(task)
         else:
             if os.path.exists(f"data/tasks/{week}/{task}/details/registered.csv") == False:
-                sort_exam_data_before(f"data/tasks/{task}/{task}.csv")
-            elif os.path.exists(f"data/tasks/{week}/{task}/"):
-                # Get current time in Tashkent
-                tashkent_timezone = pytz.timezone("Asia/Tashkent")  # Or appropriate IANA timezone name
-                now = datetime.datetime.now(tashkent_timezone)
-
-                # Check if it's Friday and after 2:30 PM
-                if now.weekday() == 4 and now.hour >= 14 and now.minute >= 30:  # Friday is 4 (Monday is 0)
-                    sort_exam_data_during(f"data/tasks/{week}/{task}/details/registered.csv")
+                sort_exam_data_before(f"data/tasks/{week}/{task}/{task}.csv")
             elif os.path.exists(f"data/tasks/{week}/{task}/"):
                 # Get current time in Tashkent
                 tashkent_timezone = pytz.timezone("Asia/Tashkent")  # Or appropriate IANA timezone name
@@ -456,8 +427,10 @@ def main():
 
                 # Check if it's Friday and after 6:30 PM
                 if now.weekday() == 4 and now.hour >= 18 and now.minute >= 30:  # Friday is 4 (Monday is 0)
-                    get_specific_project_complеtion_info(token, str(project_id), week, task, 'data/participants/intensiv_participants.csv')
-        
+                    if not os.path.exists(f"data/tasks/{week}/{task}/{task}.csv"):
+                        get_specific_project_complеtion_info(token, str(project_id), week, task, 'data/participants/intensiv_participants.csv')
+
+                    exam_report(task)
 
 
 

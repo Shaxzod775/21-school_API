@@ -1,9 +1,14 @@
+import sys
+sys.path.append("..")
+
 import telegram.constants
-import re
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputFile, InputMediaPhoto
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, CallbackContext
+from posts import create_telegraph_post, make_content
 from db import *  
 from config import *
+from api.main import *
+from handle_files import *
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -32,7 +37,7 @@ async def handle_authorization(update: Update, context: ContextTypes.DEFAULT_TYP
     ]
     reply_markup_language = InlineKeyboardMarkup(keyboard_language)
 
-    await update.message.reply_text("Choose your language:", reply_markup=reply_markup_language)
+    await update.message.reply_text("Выберите язык:", reply_markup=reply_markup_language)
 
 
 async def language_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -43,12 +48,13 @@ async def language_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     context.user_data["language"] = language #save the language in user_data
 
     keyboard_countries = [
-        [InlineKeyboardButton("Uzbekistan", callback_data='country_uzb')],
-        [InlineKeyboardButton("Russia", callback_data='country_russia')]
+        [InlineKeyboardButton(country, callback_data=f'country_uzb')] for country in KEYBOARDS['language_selected']['keyboard'][language]
     ]
 
     reply_markup_countries = InlineKeyboardMarkup(keyboard_countries)
-    await query.edit_message_text(text=f"You selected {language}. Now, select your country:", reply_markup=reply_markup_countries)  # Clearer text
+    message = KEYBOARDS['language_selected']['message'][language]
+
+    await query.edit_message_text(message, reply_markup=reply_markup_countries)
 
 
 async def country_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -57,52 +63,41 @@ async def country_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     country = query.data.split('_')[1]
 
-    if country == "uzb":
-        keyboard_campuses_uzb = [ 
-            [InlineKeyboardButton("Ташкент", callback_data='campus_tashkent')],
-            [InlineKeyboardButton("Самарканд", callback_data='campus_samarkand')]
-        ]
-        reply_markup_campuses = InlineKeyboardMarkup(keyboard_campuses_uzb) 
-        await query.edit_message_text(text="Choose your campus in Uzbekistan:", reply_markup=reply_markup_campuses)
+    context.user_data['country'] = country
+    language = context.user_data['language']
 
-    elif country == "russia":
-        keyboard_campuses_rus = [ 
-            [InlineKeyboardButton("Новосибирск", callback_data='campus_novosibirsk')],
-            [InlineKeyboardButton("Москва", callback_data='campus_moscow')],
-            [InlineKeyboardButton("Кампус Ш21 (ТЕСТ)", callback_data='campus_test')],
-            [InlineKeyboardButton("Белгород", callback_data='campus_belgorod')],
-            [InlineKeyboardButton("Нижний Новгород", callback_data='campus_nizhny_novgorod')],
-            [InlineKeyboardButton("Сургут", callback_data='campus_surgut')],
-            [InlineKeyboardButton("Липецк", callback_data='campus_lipetsk')],
-            [InlineKeyboardButton("Казань", callback_data='campus_kazan')],
-            [InlineKeyboardButton("Магас", callback_data='campus_magas')],
-            [InlineKeyboardButton("Великий Новгород", callback_data='campus_veliky_novgorod')],
-            [InlineKeyboardButton("Ярославль", callback_data='campus_yaroslavl')],
-            [InlineKeyboardButton("Якутск", callback_data='campus_yakutsk')],
-            [InlineKeyboardButton("Челябинск", callback_data='campus_chelyabinsk')],
-            [InlineKeyboardButton("Сахалин", callback_data='campus_sakhalin')],
-            [InlineKeyboardButton("ВГИК", callback_data='campus_vgik')],
-            [InlineKeyboardButton("Анадырь", callback_data='campus_anadyr')],
-            [InlineKeyboardButton("Магадан", callback_data='campus_magadan')]
-        ]
-        reply_markup_campuses = InlineKeyboardMarkup(keyboard_campuses_rus)  
-        await query.edit_message_text(text='Choose your campus in Russia:', reply_markup=reply_markup_campuses)
+    campuses = KEYBOARDS['country_selected']['keyboard'][language]
+
+    keyboard_campuses_uzb = [
+        [InlineKeyboardButton(campuses[0], callback_data=f"campus_tashkent")], 
+        [InlineKeyboardButton(campuses[1], callback_data=f"campus_samarkand")] 
+    ]
+
+    reply_markup_campuses = InlineKeyboardMarkup(keyboard_campuses_uzb)
+    message = KEYBOARDS['country_selected']['message'][language]
+
+    await query.edit_message_text(message, reply_markup=reply_markup_campuses)
+
 
 
 async def campus_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()
 
+    language = context.user_data['language']
     campus = query.data.split('_')[1]
     context.user_data['campus'] = campus
 
-    keyboard_streams = [ 
-        [InlineKeyboardButton("Основа", callback_data='stream_osnova')],
-        [InlineKeyboardButton("Интенсив", callback_data='stream_intensiv')],
-    ]
-    reply_markup_streams = InlineKeyboardMarkup(keyboard_streams)  
+    streams = KEYBOARDS['campus_selected']['keyboard'][language]
 
-    await query.edit_message_text(f"Вы выбрали кампус {campus}. Теперь пожалуйста выберите ваш поток", reply_markup=reply_markup_streams)
+    keyboard_streams = [ 
+        [InlineKeyboardButton(streams[0], callback_data='stream_intensive')],
+    ]
+
+    reply_markup_streams = InlineKeyboardMarkup(keyboard_streams)
+    message = KEYBOARDS['campus_selected']['message'][language]
+
+    await query.edit_message_text(message, reply_markup=reply_markup_streams)
 
 
 async def stream_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -122,24 +117,25 @@ async def show_main_options(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     context.user_data['chatId'] = chat_id
 
     image_path = "./images/21_school_logo.jpg"
-    url = "https://edu.21-school.ru/profile/glassole"
-    username = "glassole"
+    
+    try:
+        language = get_data(chat_id, 'language')
+    except KeyError as e:
+        raise KeyError(f"Wrong language has been entered {e}")
 
-    caption = f"Создатель бота @shaxzod\_710 \(ник в школе [{username}]({url})\)"
+    caption = KEYBOARDS['show_main_options']['caption'][language[0]]
 
-    keyboard = [
-        [InlineKeyboardButton("Статистика по заданиям", callback_data='stats')],
-        [InlineKeyboardButton("Язык", callback_data='change_language')],
-        [InlineKeyboardButton("Кампус", callback_data='change_campus')],
-        [InlineKeyboardButton("Поток", callback_data='change_stream')]
-    ]
+    keyboard = list()
+
+    for item in KEYBOARDS['show_main_options']['keyboard'][language[0]]:
+        keyboard.append([InlineKeyboardButton(item['text'], callback_data=item['callback_data'])])
+
     reply_markup = InlineKeyboardMarkup(keyboard)
-
     context.user_data['previous_markup'] = reply_markup
 
     try:
         with open(image_path, "rb") as image_file:
-            input_file = InputFile(image_file)  # Read file only once
+            input_file = InputFile(image_file)  
 
             if update.callback_query:  
                 chat_id = update.effective_chat.id
@@ -177,14 +173,19 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()
 
+    chat_id = update.effective_user.id
+
+    try:
+        language = get_data(chat_id, 'language')
+    except KeyError as e:
+        raise KeyError(f"An error occured\n{e}")
+
     if query.data == 'stats':
-        keyboard = [
-            [InlineKeyboardButton("1 неделя", callback_data='stats_intensive_week_1')],
-            [InlineKeyboardButton("2 неделя", callback_data='stats_intensive_week_2')],
-            [InlineKeyboardButton("3 неделя", callback_data='stats_intensive_week_3')],
-            [InlineKeyboardButton("4 неделя", callback_data='stats_intensive_week_4')],
-            [InlineKeyboardButton("Go back", callback_data='go_back')]
-        ]
+        keyboard = list()
+
+        for item in KEYBOARDS['button']['stats']['keyboard'][language[0]]:
+            keyboard.append([InlineKeyboardButton(item['text'], callback_data=item['callback_data'])])
+
         reply_markup = InlineKeyboardMarkup(keyboard)
         context.user_data['previous_markup'] = query.message.reply_markup
         await query.edit_message_reply_markup(reply_markup=reply_markup)
@@ -192,7 +193,10 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     elif query.data == "go_back":
         previous_markup = context.user_data.get('previous_markup')
         if previous_markup:
-            await query.edit_message_reply_markup(reply_markup=previous_markup)
+            chat_id = update.effective_chat.id
+            message_id = update.effective_message.id
+            await context.bot.delete_message(chat_id, message_id)
+            await show_main_options(update, context)
     else:
         await query.edit_message_media(media=query.message.media, caption=query.message.caption, reply_markup=InlineKeyboardMarkup(keyboard)) 
 
@@ -249,7 +253,7 @@ async def language_changed(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     query = update.callback_query
     await query.answer()
 
-    language = query.data.split('_')[1]
+    language = query.data.split('_')[2]
     context.user_data['language'] = language
 
     update_user(context.user_data['chatId'], language=language)
@@ -299,22 +303,87 @@ async def show_specific_task_info(update: Update, context: ContextTypes.DEFAULT_
     await query.answer()
 
     keyboard = [
-        [InlineKeyboardButton("This function is working", callback_data="test")]   
+       [InlineKeyboardButton("Go back", callback_data='go_back')]   
     ]
-    keyboard.append([InlineKeyboardButton("Go back", callback_data='go_back')])
+
     reply_markup = InlineKeyboardMarkup(keyboard)
 
+    caption = update.effective_message.caption
+    context.user_data['caption'] = caption
+
+    task = query.data
+
+    report = make_report(task)
+    result = list()
+    result.append(report['report'])
+
+    passed_students = report['passed_students']
+    if passed_students:
+        post_passed = get_post(task, "url_passed")
+        if post_passed:
+            result.append(f"Список сдавших проэкт: {post_passed}\n\n")
+        else:
+            post_passed = create_telegraph_post(TELEGRAPH_TOKEN, "Список учеников сдавших проэкт:", make_content(passed_students))['result']['url']
+            create_post(task, post_passed, 'url_passed')
+            result.append(f"Список сдавших проэкт: {post_passed}\n\n")
+
+    # Students who scored 100%
+    scored_hundred = report['scored_hundred'] 
+    if scored_hundred:
+        post_hundred = get_post(task, 'url_scored_hundred')
+        if post_hundred:
+            result.append(f"Список учеников, набравших 100%: {post_hundred}\n\n")
+        else:
+            post_hundred = create_telegraph_post(TELEGRAPH_TOKEN, "Список учеников, набравших 100%:", make_content(scored_hundred))['result']['url']
+            create_post(task, post_hundred, 'url_scored_hundred')
+            result.append(f"Список учеников, набравших 100%: {post_hundred}\n\n")
+
+    # Students who attempted but failed
+    scored_didnt_pass = report['scored_didnt_pass']
+    if scored_didnt_pass:
+        post_didnt_pass = get_post(task, 'url_scored_didnt_pass')
+        if post_didnt_pass:
+            result.append(f"Список учеников, не сдавших проэкт, но сделавших хотя бы одно задание: {post_didnt_pass}\n\n")
+        else:
+            post_didnt_pass = create_telegraph_post(TELEGRAPH_TOKEN, "Список учеников, не сдавших проэкт, но сделавших хотя бы одно задание:", make_content(scored_didnt_pass))['result']['url']
+            create_post(task, post_didnt_pass, 'url_scored_didnt_pass')
+            result.append(f"Список учеников, не сдавших проэкт, но сделавших хотя бы одно задание: {post_didnt_pass}\n\n")
+
+    # Students currently working on the project
+    in_progress = report['in_progress']
+    if in_progress:
+        post_in_progress = get_post(task, 'url_in_progress')
+        if post_in_progress:
+            result.append(f"Список учеников, выполняющих проэкт: {post_in_progress}\n\n")
+        else:
+            post_in_progress = create_telegraph_post(TELEGRAPH_TOKEN, "Список учеников, выполняющих проэкт:", make_content(post_in_progress))['result']['url']
+            create_post(task, post_in_progress, 'url_in_progress')
+            result.append(f"Список учеников, выполняющих проэкт: {post_in_progress}\n\n")
+
+    # Students waiting for review
+    in_reviews = report['in_reviews'] 
+    if in_reviews:
+        post_in_reviews = get_post(task, 'url_in_reviews')
+        if post_in_reviews:
+            result.append(f"Список учеников, ожидающих проверку: {post_in_reviews}\n\n")
+        else:
+            post_in_reviews = create_telegraph_post(TELEGRAPH_TOKEN, "Список учеников, ожидающих проверку:", make_content(in_reviews))['result']['url']
+            create_post(task, post_in_reviews, 'url_in_reviews')
+            result.append(f"Список учеников, ожидающих проверку: {post_in_reviews}\n\n")
+
+    # Registered students
+    registered = report['registered']
+    if registered:
+        post_registered = get_post(task, 'url_registered')
+        if post_registered:
+            result.append(f"Список зарегистрированных учеников: {post_registered}\n\n")
+        else:
+            post_registered = create_telegraph_post(TELEGRAPH_TOKEN, "Список зарегистрированных учеников:", make_content(registered))['result']['url']
+            create_post(task, post_registered, 'url_registered')
+            result.append(f"Список зарегистрированных учеников: {post_registered}\n\n")
+
+    await query.edit_message_caption(f"{"".join(result)}")
     await query.edit_message_reply_markup(reply_markup=reply_markup)
-
-    # if query.data == "stats_intensive_week_1":
-    #         keyboard = [
-    #             [InlineKeyboardButton(task, callback_data=task)] for task, _ in FIRST_WEEK_INTENSIVE.items()   
-    #         ]
-    #         keyboard.append([InlineKeyboardButton("Go back", callback_data='go_back')])
-    #         reply_markup = InlineKeyboardMarkup(keyboard)
-    #         await query.edit_message_reply_markup(reply_markup=reply_markup)
-  
-
 
 
 
@@ -323,9 +392,9 @@ def main():
 
     app.add_handler(CommandHandler('start', start))
     app.add_handler(CallbackQueryHandler(language_selected, pattern=r"^lang_(english|russian|uzbek)$"))
-    app.add_handler(CallbackQueryHandler(country_selected, pattern=r"^country_(uzb|russia)$"))
-    app.add_handler(CallbackQueryHandler(campus_selected, pattern=r"^campus_(tashkent|samarkand|novosibirsk|moscow|test|belgorod|nizhny_novgorod|surgut|lipetsk|kazan|magas|veliky_novgorod|yaroslavl|yakutsk|chelyabinsk|sakhalin|vgik|anadyr|magadan)$"))
-    app.add_handler(CallbackQueryHandler(stream_selected, pattern=r"^stream_(intensiv|osnova)$"))
+    app.add_handler(CallbackQueryHandler(country_selected, pattern="country_uzb"))
+    app.add_handler(CallbackQueryHandler(campus_selected, pattern=r"^campus_(tashkent|samarkand)$"))
+    app.add_handler(CallbackQueryHandler(stream_selected, pattern="stream_intensive"))
 
     app.add_handler(CallbackQueryHandler(change_language, pattern=r"^change_language"))
     app.add_handler(CallbackQueryHandler(language_changed, pattern=r"^changed_lang_(english|russian|uzbek)$"))
