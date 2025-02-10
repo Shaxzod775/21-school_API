@@ -142,6 +142,12 @@ KEYBOARDS = {
                 "russian": [{"text":"1 неделя", "callback_data" : "stats_intensive_week_1"}, {"text":"2 неделя", "callback_data" : "stats_intensive_week_2"}, {"text":"3 неделя", "callback_data" : "stats_intensive_week_3"}, {"text":"4 неделя", "callback_data" : "stats_intensive_week_4"}, {"text": "Назад", "callback_data": "go_back"}],
                 "uzbek": [{"text":"1 hafta", "callback_data" : "stats_intensive_week_1"}, {"text":"2 hafta", "callback_data" : "stats_intensive_week_2"}, {"text":"3 hafta", "callback_data" : "stats_intensive_week_3"}, {"text":"4 hafta", "callback_data" : "stats_intensive_week_4"}, {"text": "Ortga", "callback_data": "go_back"}],
             }
+        },
+        "other_campus_stats_button" : {
+           "english": {"text":"Show the report of the {} campus too", "callback_data" : "show_other_campus_stats"},
+            "russian": {"text":"Показать отчёт по кампусу в {}e тоже", "callback_data" : "show_other_campus_stats"},
+            "uzbek": {"text":"{} kampusini ham bo'yicha hisobotni ko'rsatish", "callback_data" : "show_other_campus_stats"},
+ 
         }
     },
 }

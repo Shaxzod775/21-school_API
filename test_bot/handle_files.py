@@ -19,17 +19,21 @@ def read_main_csv(filepath):
 
     return lines[:len(lines) - 1]
 
-def make_report(task, language):
+def make_report(task, language, campus_arg):
     if language not in ("english", "russian", "uzbek"):
         raise Exception(f"The report cannot be displayed in that language! {language}")
 
     _return = dict()
     _, week = INTENSIVE[task]
 
-    filepath = f'../api/data/tasks/{week}/{task}/{task}.csv'
+    filepath = f'../api/data/tasks/{campus_arg}/{week}/{task}/{task}.csv'
     if not os.path.exists(filepath):
-        return "Report is not yet ready" if language == "english" else "Отчет еще не готов" if language == "russian" else "Hisobot hali tayyor emas"
-
+        return {'report': {  
+            "english": "Report is not yet ready",
+            "russian": "Отчет еще не готов",
+            "uzbek": "Hisobot hali tayyor emas"
+        }[language]}
+    
     passed_students, _, scored_didnt_pass, scored_hundred_percent, num_of_students, acceptance_rate, in_progress, in_reviews, registered = sort_task_data(filepath)
 
     _return['passed_students'] = [[student.split(',')[0], student.split(',')[-1]] for student in passed_students]
@@ -39,8 +43,18 @@ def make_report(task, language):
     _return['in_reviews'] = [[student.split(',')[0], student.split(',')[-1]] for student in in_reviews]
     _return['registered'] = [[student.split(',')[0], student.split(',')[-1]] for student in registered]
 
+    if language == "russian": 
+            campus_language_specified = "Ташкент" if campus_arg == "tashkent" else "Самарканд"
+    else:
+        campus_language_specified = campus_arg.capitalize()
+
+
     report = list()
-    report.append({"english": "Report:\n\n", "russian": "Отчет:\n\n", "uzbek": "Hisobot:\n\n"}[language])
+    report.append({
+        "english": f"Report ({task}) in {campus_language_specified}:\n\n",
+        "russian": f"Отчет ({task}) в {campus_language_specified}e:\n\n",
+        "uzbek": f"Hisobot ({task}) {campus_language_specified}da:\n\n"
+    }[language])
 
     if in_progress:
         report.append({
