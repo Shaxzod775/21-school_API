@@ -96,12 +96,24 @@ def init_table_posts():
         cursor.execute('''CREATE TABLE IF NOT EXISTS posts (
                             id INTEGER PRIMARY KEY AUTOINCREMENT,
                             task TEXT UNIQUE NOT NULL,
-                            url_passed TEXT UNIQUE,
-                            url_scored_hundred TEXT UNIQUE,
-                            url_scored_didnt_pass TEXT UNIQUE,
-                            url_in_progress TEXT UNIQUE,
-                            url_in_reviews TEXT UNIQUE,
-                            url_registered TEXT UNIQUE
+                            url_passed_english TEXT UNIQUE,
+                            url_passed_russian TEXT UNIQUE,
+                            url_passed_uzbek TEXT UNIQUE,
+                            url_hundred_english TEXT UNIQUE,
+                            url_hundred_russian TEXT UNIQUE,
+                            url_hundred_uzbek TEXT UNIQUE,
+                            url_scored_didnt_pass_english TEXT UNIQUE,
+                            url_scored_didnt_pass_russian TEXT UNIQUE,
+                            url_scored_didnt_pass_uzbek TEXT UNIQUE,
+                            url_in_progress_english TEXT UNIQUE,
+                            url_in_progress_russian TEXT UNIQUE,
+                            url_in_progress_uzbek TEXT UNIQUE,
+                            url_in_reviews_english TEXT UNIQUE,
+                            url_in_reviews_russian TEXT UNIQUE,
+                            url_in_reviews_uzbek TEXT UNIQUE,
+                            url_registered_english TEXT UNIQUE,
+                            url_registered_russian TEXT UNIQUE,
+                            url_registered_uzbek TEXT UNIQUE
                         )''')
 
         conn.commit()
@@ -129,7 +141,7 @@ def create_post(task, url, url_type):
     cursor = conn.cursor()
 
     try:
-        allowed_columns = {'url_passed', 'url_scored_hundred', 'url_scored_didnt_pass', 'url_in_progress', 'url_in_reviews', 'url_registered'}
+        allowed_columns = {'url_passed_english', 'url_passed_russian', 'url_passed_uzbek', 'url_hundred_english', 'url_hundred_russian', 'url_hundred_uzbek', 'url_scored_didnt_pass_english', 'url_scored_didnt_pass_russian', 'url_scored_didnt_pass_uzbek', 'url_in_progress_english', 'url_in_progress_russian', 'url_in_progress_uzbek', 'url_in_reviews_english', 'url_in_reviews_russian', 'url_in_reviews_uzbek', 'url_registered_english', 'url_registered_russian', 'url_registered_uzbek'}
         if url_type not in allowed_columns:
             raise ValueError(f"Invalid url_type: {url_type}")
 
@@ -167,7 +179,7 @@ def get_post(task, url_type):
     conn = sqlite3.connect('posts.db')
     cursor = conn.cursor()
 
-    allowed_columns = {'url_passed', 'url_scored_hundred', 'url_scored_didnt_pass', 'url_in_reviews', 'url_registered'}
+    allowed_columns = {'url_passed_english', 'url_passed_russian', 'url_passed_uzbek', 'url_hundred_english', 'url_hundred_russian', 'url_hundred_uzbek', 'url_scored_didnt_pass_english', 'url_scored_didnt_pass_russian', 'url_scored_didnt_pass_uzbek', 'url_in_progress_english', 'url_in_progress_russian', 'url_in_progress_uzbek', 'url_in_reviews_english', 'url_in_reviews_russian', 'url_in_reviews_uzbek', 'url_registered_english', 'url_registered_russian', 'url_registered_uzbek'}
     if url_type not in allowed_columns:
         raise ValueError(f"Invalid url_type: {url_type}")
 
@@ -197,7 +209,7 @@ def update_post(task, url_type, url):
     conn = sqlite3.connect('posts.db')
     cursor = conn.cursor()
 
-    allowed_columns = {'url_passed', 'url_scored_hundred', 'url_scored_didnt_pass', 'url_in_reviews', 'url_registered'}
+    allowed_columns = {'url_passed_english', 'url_passed_russian', 'url_passed_uzbek', 'url_hundred_english', 'url_hundred_russian', 'url_hundred_uzbek', 'url_scored_didnt_pass_english', 'url_scored_didnt_pass_russian', 'url_scored_didnt_pass_uzbek', 'url_in_progress_english', 'url_in_progress_russian', 'url_in_progress_uzbek', 'url_in_reviews_english', 'url_in_reviews_russian', 'url_in_reviews_uzbek', 'url_registered_english', 'url_registered_russian', 'url_registered_uzbek'}
     if url_type not in allowed_columns:
         raise ValueError(f"Invalid url_type: {url_type}")
 
@@ -223,9 +235,8 @@ def get_1():
 
 if __name__ == '__main__':
     # drop_table("posts")
+    drop_table("posts")
     init_table_posts()
-
-    get_1()
 
 
 

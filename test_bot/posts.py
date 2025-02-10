@@ -18,6 +18,7 @@ from config import *
 #     return response.get("result", {}).get("access_token")
 
 # Step 2: Create a new post
+
 def create_telegraph_post(access_token, title, content):
     url = "https://api.telegra.ph/createPage"
     data = {
@@ -31,73 +32,25 @@ def create_telegraph_post(access_token, title, content):
     return response
 
 
-def make_content(students):
+def make_content(students, task_id, language):
+    if language not in ("english", "russian", "uzbek"):
+        raise Exception(f"The text in given language cannot be displayed! {language}")
+
+    title = MAKE_CONTENT['title'][language]
+
     content = [
-        {"tag": "p", "children": ["Никнейм, Процент за проект"]}
+        {"tag": "p", "children": [title]}
     ]
 
     # Append each student entry as a hyperlink
     content.extend([
         {"tag": "p", "children": [
-            {"tag": "a", "attrs": {"href": f"https://edu.21-school.ru/profile/{student[0]}"}, "children": [f"{student[0]}, {student[1]}"]}
+            {"tag": "a", "attrs": {"href": f"https://edu.21-school.ru/profile/{student[0]}/project/{task_id}/about"}, "children": [f"{student[0]}, {student[1]}"]}
         ]}
+
         for student in students
     ])
 
     return content
-
-
-# Example usage
-# access_token = TELEGRAPH_TOKEN  # Only needed once; save the token
-
-# content = [
-#     {"tag": "p", "children": [
-#         f"Никнейм, Процент за проэкт"
-#     ]},
-#     {"tag": "a", "attrs": {"href": "https://edu.21-school.ru/profile/orivelam"}, "children": ["awesome link"]},
-#     " for more info. orivelam",
-#     # {"tag": "p", "children": [
-#     #     "Follow us on ",
-#     #     {"tag": "a", "attrs": {"href": "https://t.me/mychannel"}, "children": ["Telegram"]},
-#     #     "!"
-#     # ]}
-# ]
-
-
-
-# report = make_report("E01D05")
-# text = report['report']
-
-# passed_students = report['passed_students'] 
-# scored_hundred = report['scored_hundred'] 
-# scored_didnt_pass = report['scored_didnt_pass'] 
-# in_progress = report['in_progress'] 
-# in_reviews = report['in_reviews'] 
-# registered = report['registered'] 
-
-# make_content(passed_students)
-
-
-
-
-
-# content = [
-#     {"tag": "p", "children": [
-#         f"Список учеников 123:"
-#     ]},
-#     {"tag": "p", "children": [
-#         f"Check out this",
-#         {"tag": "a", "attrs": {"href": "https://edu.21-school.ru/profile/orivelam"}, "children": ["awesome link"]},
-#         " for more info. orivelam"
-#     ]},
-#     {"tag": "p", "children": [
-#         "Follow us on ",
-#         {"tag": "a", "attrs": {"href": "https://t.me/mychannel"}, "children": ["Telegram"]},
-#         "!"
-#     ]}
-# ]
-
-# post = create_telegraph_post(TELEGRAPH_TOKEN, "Список учеников", content)
-# print(post)
 
 

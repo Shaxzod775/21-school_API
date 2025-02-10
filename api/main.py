@@ -63,22 +63,25 @@ def get_specific_campus_id(campus_name):
     _return_value = "None"
     with open("data/campuses/campuses.csv", "r+") as file:
         line = file.readline()
+        campuses = list()
         while line:
             line = file.readline()
-            id, shortName, school, fullName = line.split(',')
-            if campus_name.capitalize() in shortName.split():
-                _return_value = id
-                break
-    
+            campuses.append(line.strip())
+
+    for school in campuses[:len(campuses) - 1]:
+        shortname = school.split(',')[1]
+        if shortname.split()[0] == '21':
+            if shortname.split()[1] == campus_name.capitalize():
+             _return_value = school.split(',')[0]
+             break
+
     if _return_value == "None":
         raise Exception(f"There is no campus named {campus_name} among all the campuses")
 
     return _return_value
 
 
-def get_coatlitions_api(access_token, campus_id):
-    _return_value = str()
-
+def get_coatlitions_api(access_token, campus_id, campus_name):
     HEADERS = {
     'Authorization': 'Bearer {}'.format(access_token),
     }
@@ -88,9 +91,10 @@ def get_coatlitions_api(access_token, campus_id):
     if response.status_code == 200:
         coalitions = json.loads(response.text)['coalitions']
 
-        _return_value = coalitions
-
         intensiv_tribe_names = ['AYIQ', 'JAYRON', 'LAYLAK', 'QOPLON']
+
+        if campus_name == 'samarkand':
+            intensiv_tribe_names = ['BO\'RI', 'HUMO', 'LOCHIN', 'TUYA']
 
         intensiv_coalitions = list()
         main_education_coalitions = list()
@@ -100,7 +104,7 @@ def get_coatlitions_api(access_token, campus_id):
             else:
                 main_education_coalitions.append(coalitions[i])
 
-        with open('data/coalitions/intensiv_coalitions.csv', 'w+') as int_file:
+        with open(f'data/coalitions/{campus_name}/intensiv_coalitions.csv', 'w+') as int_file:
             int_file.write('coalitionId,name\n')
             for i in range(len(intensiv_coalitions)):
                 if i == (len(intensiv_coalitions)):
@@ -110,25 +114,25 @@ def get_coatlitions_api(access_token, campus_id):
                 int_file.write(f'{coalitionId},{name}\n')
 
         
-        with open('data/coalitions/main_education_coalitions.csv', 'w+') as int_file:
+        with open(f'data/coalitions/{campus_name}/main_education_coalitions.csv', 'w+') as int_file:
             int_file.write('coalitionId,name\n')
             for i in range(len(main_education_coalitions)):
                 coalitionId, name = main_education_coalitions[i]['coalitionId'], main_education_coalitions[i]['name']
                 int_file.write(f'{coalitionId},{name}\n')
 
-    return _return_value
 
 def get_all_intensiv_participants_api(access_token):
-    all_participants = list()
-    intensiv_coalitions_ids = list()
+    all_participants_tashkent = list()
+    tashkent_intensiv_coalitions_ids = list()
 
-    with open('data/coalitions/intensiv_coalitions.csv', 'r+') as file:
+    #Tashkent
+    with open('data/coalitions/tashkent/intensiv_coalitions.csv', 'r+') as file:
         line = file.readline()
         while line:
             line = file.readline()
-            intensiv_coalitions_ids.append(line.split(',')[0])
+            tashkent_intensiv_coalitions_ids.append(line.split(',')[0])
 
-    new_intensiv_coalitions_ids = intensiv_coalitions_ids[:-1]
+    new_intensiv_coalitions_ids = tashkent_intensiv_coalitions_ids[:-1]
 
     for i in range(len(new_intensiv_coalitions_ids)):
         try: 
@@ -140,19 +144,54 @@ def get_all_intensiv_participants_api(access_token):
 
             if response.status_code == 200:
                 for student in json.loads(response.text)['participants']:
-                    all_participants.append(student)
+                    all_participants_tashkent.append(student)
                     print(student)
             else:
                 raise Exception(f"There was a mistake while parcing participants from the API\n{response.status_code}\n{response.text}")
         except Exception:
             raise Exception
         
-    with open('data/participants/intensiv_participants.csv', 'w+') as file:
+    with open('data/participants/tashkent/intensiv_participants.csv', 'w+') as file:
         file.write('USERNAME\n')
-        for username in all_participants:
+        for username in all_participants_tashkent:
             file.write(f'{username}\n')
 
-    return all_participants
+
+    #Samarkand
+
+    samarkand_intensiv_coalitions_ids = list()
+    all_participants_samarkand = list()
+
+    with open('data/coalitions/samarkand/intensiv_coalitions.csv', 'r+') as file:
+        line = file.readline()
+        while line:
+            line = file.readline()
+            samarkand_intensiv_coalitions_ids.append(line.split(',')[0])
+
+    new_samarkand_intensiv_coalitions_ids = samarkand_intensiv_coalitions_ids[:-1]
+
+    for i in range(len(new_samarkand_intensiv_coalitions_ids)):
+        time.sleep(0.5)
+        try: 
+            HEADERS = {
+            'Authorization': 'Bearer {}'.format(access_token),
+            }
+
+            response = requests.get(BASE_URL.format(f"/coalitions/{new_samarkand_intensiv_coalitions_ids[i]}/participants?limit=1000&offset=0"), headers=HEADERS)
+
+            if response.status_code == 200:
+                for student in json.loads(response.text)['participants']:
+                    all_participants_samarkand.append(student)
+                    print(student)
+            else:
+                raise Exception(f"There was a mistake while parcing participants from the API\n{response.status_code}\n{response.text}")
+        except Exception:
+            raise Exception
+        
+    with open('data/participants/samarkand/intensiv_participants.csv', 'w+') as file:
+        file.write('USERNAME\n')
+        for username in all_participants_samarkand:
+            file.write(f'{username}\n')
 
 
 def get_info_participant_project_percent(access_token, username, projectId):
@@ -177,29 +216,54 @@ def get_specific_project_complеtion_info(access_token, project_id, week, projec
         'Authorization': 'Bearer {}'.format(access_token),
         }
 
-        if os.path.exists(filename) == True:
-            students = list()
-            with open(filename, 'r') as file:
+        if os.path.exists(f"data/participants/tashkent/{filename}") and os.path.exists(f"data/participants/samarkand/{filename}"):
+            # students_tahkent = list()
+            # with open(f"data/participants/tashkent/{filename}", 'r') as file:
+            #     student = file.readline()
+            #     while student:
+            #         student = file.readline()
+            #         students_tahkent.append(student.strip())
+
+            # new_students_tashkent = students_tahkent[:len(students_tahkent) - 1]
+            
+            students_samarkand = list()
+            with open(f"data/participants/samarkand/{filename}", 'r') as file:
                 student = file.readline()
                 while student:
                     student = file.readline()
-                    students.append(student.strip())
+                    students_samarkand.append(student.strip())
 
-            new_students = students[:len(students) - 1]
+            new_students_samarkand = students_samarkand[:len(students_samarkand) - 1]
 
             try:
-                with open(f'data/tasks/{week}/{project_name}/{project_name}.csv', "w+") as file:
+                # with open(f'data/tasks/tashkent/{week}/{project_name}/{project_name}.csv', "w+") as file:
+                #     file.write('student,title,type,status,final score\n')
+                #     for i in range(len(new_students_tashkent)):
+                #             response = requests.get(BASE_URL.format(f"/participants/{new_students_tashkent[i]}/projects/{project_id}"), headers=HEADERS)
+                #             if response.status_code == 200:
+                #                 response_json = json.loads(response.text)
+                #                 title = response_json['title']
+                #                 type = response_json['type']
+                #                 status = response_json['status']
+                #                 final_percentage = response_json['finalPercentage']
+                #                 file.write(f'{new_students_tashkent[i]},{title},{type},{status},{final_percentage}\n')
+                #                 print(f'{new_students_tashkent[i]},{title},{type},{status},{final_percentage}')
+                #                 time.sleep(1)
+                #             else:
+                #                 raise Exception(f"There was a problem during parsing scores from the api!\n{response.status_code}\n{response.text}")
+                
+                with open(f'data/tasks/samarkand/{week}/{project_name}/{project_name}.csv', "w+") as file:
                     file.write('student,title,type,status,final score\n')
-                    for i in range(len(new_students)):
-                            response = requests.get(BASE_URL.format(f"/participants/{new_students[i]}/projects/{project_id}"), headers=HEADERS)
+                    for i in range(len(new_students_samarkand)):
+                            response = requests.get(BASE_URL.format(f"/participants/{new_students_samarkand[i]}/projects/{project_id}"), headers=HEADERS)
                             if response.status_code == 200:
                                 response_json = json.loads(response.text)
                                 title = response_json['title']
                                 type = response_json['type']
                                 status = response_json['status']
                                 final_percentage = response_json['finalPercentage']
-                                file.write(f'{new_students[i]},{title},{type},{status},{final_percentage}\n')
-                                print(f'{new_students[i]},{title},{type},{status},{final_percentage}')
+                                file.write(f'{new_students_samarkand[i]},{title},{type},{status},{final_percentage}\n')
+                                print(f'{new_students_samarkand[i]},{title},{type},{status},{final_percentage}')
                                 time.sleep(1)
                             else:
                                 raise Exception(f"There was a problem during parsing scores from the api!\n{response.status_code}\n{response.text}")
@@ -396,41 +460,42 @@ def main():
     
         project_id, week = INTENSIVE[f'{task}']
 
-        if os.path.exists('data/campuses/campuses.csv') == False:
+        if not os.path.exists('data/campuses/campuses.csv'):
             get_list_of_campuses_api(token)
             tashkent_id = get_specific_campus_id("tashkent")
+            samarkand_id = get_specific_campus_id("samarkand")
         else:
             tashkent_id = get_specific_campus_id("tashkent")
+            samarkand_id = get_specific_campus_id("samarkand")
+            
 
-        if os.path.exists('data/coalitions/intensiv_coalitions.csv') == False or os.path.exists('data/coalitions/main_education_coalitions.csv') == False:
-            get_coatlitions_api(token, tashkent_id)
+        if not os.path.exists('data/coalitions/tashkent/intensiv_coalitions.csv') or not os.path.exists('data/coalitions/samarkand/intensiv_coalitions.csv') :
+            get_coatlitions_api(token, tashkent_id, 'tashkent')
+            get_coatlitions_api(token, samarkand_id, 'samarkand')
 
-        if os.path.exists('data/participants/intensiv_participants.csv') == False:
+        if not os.path.exists('data/participants/tashkent/intensiv_participants.csv') or not os.path.exists('data/participants/samarkand/intensiv_participants.csv'):
             get_all_intensiv_participants_api(token)
 
-        if os.path.exists(f'data/tasks/{week}/{task}/{task}.csv') == False:
-            if os.path.exists(f"data/tasks/{week}/{task}/details/in_reviews.csv"):
-                get_specific_project_complеtion_info(token, str(project_id), week, task, f"data/tasks/{week}/{task}/details/in_reviews.csv")
-            else:
-                get_specific_project_complеtion_info(token, str(project_id), week, task, 'data/participants/intensiv_participants.csv')
+        if not os.path.exists(f'data/tasks/tashkent/{week}/{task}/{task}.csv') or not os.path.exists(f'data/tasks/samarkand/{week}/{task}/{task}.csv'):
+                get_specific_project_complеtion_info(token, str(project_id), week, task, 'intensiv_participants.csv')
 
-        if sys.argv[1].startswith('P') or sys.argv[1].startswith('T'):
-            if os.path.exists(f'data/tasks/{task}/task_report.txt') == False:
-                task_report(task)
-        else:
-            if os.path.exists(f"data/tasks/{week}/{task}/details/registered.csv") == False:
-                sort_exam_data_before(f"data/tasks/{week}/{task}/{task}.csv")
-            elif os.path.exists(f"data/tasks/{week}/{task}/"):
-                # Get current time in Tashkent
-                tashkent_timezone = pytz.timezone("Asia/Tashkent")  # Or appropriate IANA timezone name
-                now = datetime.datetime.now(tashkent_timezone)
+        # if sys.argv[1].startswith('P') or sys.argv[1].startswith('T'):
+        #     if os.path.exists(f'data/tasks/{task}/task_report.txt') == False:
+        #         task_report(task)
+        # else:
+        #     if os.path.exists(f"data/tasks/{week}/{task}/details/registered.csv") == False:
+        #         sort_exam_data_before(f"data/tasks/{week}/{task}/{task}.csv")
+        #     elif os.path.exists(f"data/tasks/{week}/{task}/"):
+        #         # Get current time in Tashkent
+        #         tashkent_timezone = pytz.timezone("Asia/Tashkent")  # Or appropriate IANA timezone name
+        #         now = datetime.datetime.now(tashkent_timezone)
 
-                # Check if it's Friday and after 6:30 PM
-                if now.weekday() == 4 and now.hour >= 18 and now.minute >= 30:  # Friday is 4 (Monday is 0)
-                    if not os.path.exists(f"data/tasks/{week}/{task}/{task}.csv"):
-                        get_specific_project_complеtion_info(token, str(project_id), week, task, 'data/participants/intensiv_participants.csv')
+        #         # Check if it's Friday and after 6:30 PM
+        #         if now.weekday() == 4 and now.hour >= 18 and now.minute >= 30:  # Friday is 4 (Monday is 0)
+        #             if not os.path.exists(f"data/tasks/{week}/{task}/{task}.csv"):
+        #                 get_specific_project_complеtion_info(token, str(project_id), week, task, 'data/participants/intensiv_participants.csv')
 
-                    exam_report(task)
+        #             exam_report(task)
 
 
 

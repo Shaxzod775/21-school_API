@@ -144,6 +144,13 @@ KEYBOARDS = {
             }
         }
     },
+}
 
+MAKE_CONTENT = {
+    "title": {
+        "english": "Nickname, Percent for the project",
+        "russian": "Никнейм, Процент за проект",
+        "uzbek": "Nikneym, Loyiha uchun foiz"
+    }
 }
 

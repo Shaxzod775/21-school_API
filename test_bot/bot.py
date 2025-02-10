@@ -273,25 +273,32 @@ async def show_tasks(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     query = update.callback_query
     await query.answer()
 
+    try:
+        language = get_data(update.effective_chat.id, 'language')[0]
+    except KeyError as e:
+        raise KeyError(f"An error occured\n{e}")
+    
+    go_back = KEYBOARDS['button']['stats']['keyboard'][language][-1]['text']
+
     if query.data == "stats_intensive_week_1":
             keyboard = [
                 [InlineKeyboardButton(task, callback_data=task)] for task, _ in FIRST_WEEK_INTENSIVE.items()   
             ]
-            keyboard.append([InlineKeyboardButton("Go back", callback_data='go_back')])
+            keyboard.append([InlineKeyboardButton(go_back, callback_data='go_back')])
             reply_markup = InlineKeyboardMarkup(keyboard)
             await query.edit_message_reply_markup(reply_markup=reply_markup)
     elif query.data == "stats_intensive_week_2":
             keyboard = [
                 [InlineKeyboardButton(task, callback_data=task)] for task, _ in SECOND_WEEK_INTENSIVE.items()   
             ]
-            keyboard.append([InlineKeyboardButton("Go back", callback_data='go_back')])
+            keyboard.append([InlineKeyboardButton(go_back, callback_data='go_back')])
             reply_markup = InlineKeyboardMarkup(keyboard)
             await query.edit_message_reply_markup(reply_markup=reply_markup)
     elif query.data == "stats_intensive_week_3":
             keyboard = [
                 [InlineKeyboardButton(task, callback_data=task)] for task, _ in THIRD_WEEK_INTENSIVE.items()   
             ]
-            keyboard.append([InlineKeyboardButton("Go back", callback_data='go_back')])
+            keyboard.append([InlineKeyboardButton(go_back, callback_data='go_back')])
             reply_markup = InlineKeyboardMarkup(keyboard)
             await query.edit_message_reply_markup(reply_markup=reply_markup)
     elif query.data == "stats_intensive_week_4":
@@ -307,87 +314,99 @@ async def show_specific_task_info(update: Update, context: ContextTypes.DEFAULT_
     query = update.callback_query
     await query.answer()
 
-    keyboard = [
-       [InlineKeyboardButton("Go back", callback_data='go_back')]   
-    ]
-
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    caption = update.effective_message.caption
-    context.user_data['caption'] = caption
+    try:
+        language = get_data(update.effective_chat.id, 'language')[0]
+    except KeyError as e:
+        raise KeyError(f"An error occured\n{e}")
 
     task = query.data
+    report = make_report(task, language)
+    result = [report.get('report', '')]  # Report itself
 
-    report = make_report(task)
-    result = list()
-    result.append(report['report'])
+    task_id = TASKS_INTENSIVE_BOT[task]
 
-    passed_students = report['passed_students']
-    if passed_students:
-        post_passed = get_post(task, "url_passed")
-        if post_passed:
-            result.append(f"Список сдавших проэкт: {post_passed}\n\n")
-        else:
-            post_passed = create_telegraph_post(TELEGRAPH_TOKEN, "Список учеников сдавших проэкт:", make_content(passed_students))['result']['url']
-            create_post(task, post_passed, 'url_passed')
-            result.append(f"Список сдавших проэкт: {post_passed}\n\n")
+    try:
+        language = get_data(update.effective_chat.id, 'language')[0]  # Get the current user's language
+    except KeyError as e:
+        raise KeyError(f"An error occurred\n{e}")
 
-    # Students who scored 100%
-    scored_hundred = report['scored_hundred'] 
-    if scored_hundred:
-        post_hundred = get_post(task, 'url_scored_hundred')
-        if post_hundred:
-            result.append(f"Список учеников, набравших 100%: {post_hundred}\n\n")
-        else:
-            post_hundred = create_telegraph_post(TELEGRAPH_TOKEN, "Список учеников, набравших 100%:", make_content(scored_hundred))['result']['url']
-            create_post(task, post_hundred, 'url_scored_hundred')
-            result.append(f"Список учеников, набравших 100%: {post_hundred}\n\n")
+    for report_type in ['passed', 'hundred', 'scored_didnt_pass', 'in_progress', 'in_reviews', 'registered']:
+        students = report.get(f'scored_{report_type}' if report_type != 'passed' else 'passed_students')
+        if students:
+            for lang in ['english', 'russian', 'uzbek']:  # Loop through languages
+                post_url = get_post(task, f'url_{report_type}_{lang}')
+                if not post_url:
+                    # Language-specific titles for Telegraph posts
+                    titles = {
+                        'english': {
+                            'passed': "List of students who passed the project:",
+                            'hundred': "List of students who scored 100%:",
+                            'didnt_pass': "List of students who didn't pass the project:",
+                            'in_progress': "List of students working on the project:",
+                            'in_reviews': "List of students waiting for review:",
+                            'registered': "List of registered students:"
+                        },
+                        'russian': {
+                            'passed': "Список учеников, сдавших проект:",
+                            'hundred': "Список учеников, набравших 100%:",
+                            'didnt_pass': "Список учеников, не сдавших проект:",
+                            'in_progress': "Список учеников, выполняющих проект:",
+                            'in_reviews': "Список учеников, ожидающих проверку:",
+                            'registered': "Список зарегистрированных учеников:"
+                        },
+                        'uzbek': {
+                            'passed': "Loyiha topshirgan talabalar ro'yxati:",
+                            'hundred': "100% ball olgan talabalar ro'yxati:",
+                            'didnt_pass': "Loyiha topshirmagan talabalar ro'yxati:",
+                            'in_progress': "Loyiha ustida ishlayotgan talabalar ro'yxati:",
+                            'in_reviews': "Tekshiruvni kutayotgan talabalar ro'yxati:",
+                            'registered': "Ro'yxatdan o'tgan talabalar ro'yxati:"
+                        }
+                    }
 
-    # Students who attempted but failed
-    scored_didnt_pass = report['scored_didnt_pass']
-    if scored_didnt_pass:
-        post_didnt_pass = get_post(task, 'url_scored_didnt_pass')
-        if post_didnt_pass:
-            result.append(f"Список учеников, не сдавших проэкт, но сделавших хотя бы одно задание: {post_didnt_pass}\n\n")
-        else:
-            post_didnt_pass = create_telegraph_post(TELEGRAPH_TOKEN, "Список учеников, не сдавших проэкт, но сделавших хотя бы одно задание:", make_content(scored_didnt_pass))['result']['url']
-            create_post(task, post_didnt_pass, 'url_scored_didnt_pass')
-            result.append(f"Список учеников, не сдавших проэкт, но сделавших хотя бы одно задание: {post_didnt_pass}\n\n")
+                    post_url = create_telegraph_post(
+                        TELEGRAPH_TOKEN,
+                        f"{titles[lang][report_type]}",  # Use language-specific title
+                        make_content(students, task_id, lang)  # Assuming make_content handles different languages if needed
+                    )['result']['url']
+                    create_post(task, post_url, f'url_{report_type}_{lang}')  # Store with language suffix
 
-    # Students currently working on the project
-    in_progress = report['in_progress']
-    if in_progress:
-        post_in_progress = get_post(task, 'url_in_progress')
-        if post_in_progress:
-            result.append(f"Список учеников, выполняющих проэкт: {post_in_progress}\n\n")
-        else:
-            post_in_progress = create_telegraph_post(TELEGRAPH_TOKEN, "Список учеников, выполняющих проэкт:", make_content(post_in_progress))['result']['url']
-            create_post(task, post_in_progress, 'url_in_progress')
-            result.append(f"Список учеников, выполняющих проэкт: {post_in_progress}\n\n")
+                if lang == language:  # Only add to the result if it matches the user's language
+                    # Language-specific descriptions for the caption
+                    descriptions = {
+                        'english': {
+                            'passed': "Passed the project",
+                            'hundred': "Scored 100%",
+                            'didnt_pass': "Didn't pass the project",
+                            'in_progress': "Are working on the project",
+                            'in_reviews': "Are waiting for review",
+                            'registered': "Are registered"
+                        },
+                        'russian': {
+                            'passed': "Cдали проект",
+                            'hundred': "Набрали 100%",
+                            'didnt_pass': "Не сдали проект",
+                            'in_progress': "Выполняют проект",
+                            'in_reviews': "Ожидают проверку",
+                            'registered': "Зарегистрированы"
+                        },
+                        'uzbek': {
+                            'passed': "Loyihani topshirgan",
+                            'hundred': "100% ball olgan",
+                            'didnt_pass': "Loyihani topshirmagan",
+                            'in_progress': "Loyiha ustida ishlamoqda",
+                            'in_reviews': "Tekshiruvni kutmoqda",
+                            'registered': "Ro'yxatdan o'tgan"
+                        }
+                    }
 
-    # Students waiting for review
-    in_reviews = report['in_reviews'] 
-    if in_reviews:
-        post_in_reviews = get_post(task, 'url_in_reviews')
-        if post_in_reviews:
-            result.append(f"Список учеников, ожидающих проверку: {post_in_reviews}\n\n")
-        else:
-            post_in_reviews = create_telegraph_post(TELEGRAPH_TOKEN, "Список учеников, ожидающих проверку:", make_content(in_reviews))['result']['url']
-            create_post(task, post_in_reviews, 'url_in_reviews')
-            result.append(f"Список учеников, ожидающих проверку: {post_in_reviews}\n\n")
+                    result.append(
+                        f"{descriptions[lang][report_type]}: {post_url}\n\n"
+                    )
 
-    # Registered students
-    registered = report['registered']
-    if registered:
-        post_registered = get_post(task, 'url_registered')
-        if post_registered:
-            result.append(f"Список зарегистрированных учеников: {post_registered}\n\n")
-        else:
-            post_registered = create_telegraph_post(TELEGRAPH_TOKEN, "Список зарегистрированных учеников:", make_content(registered))['result']['url']
-            create_post(task, post_registered, 'url_registered')
-            result.append(f"Список зарегистрированных учеников: {post_registered}\n\n")
+    reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton(KEYBOARDS['button']['stats']['keyboard'][language][-1]['text'], callback_data='go_back')]])
 
-    await query.edit_message_caption(f"{"".join(result)}")
+    await query.edit_message_caption("".join(result))
     await query.edit_message_reply_markup(reply_markup=reply_markup)
 
 
