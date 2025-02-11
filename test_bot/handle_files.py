@@ -26,6 +26,8 @@ def make_report(task, language, campus_arg):
     _return = dict()
     _, week = INTENSIVE[task]
 
+    _return['campus'] = campus_arg
+
     filepath = f'../api/data/tasks/{campus_arg}/{week}/{task}/{task}.csv'
     if not os.path.exists(filepath):
         return {'report': {  

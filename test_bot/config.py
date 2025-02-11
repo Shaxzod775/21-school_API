@@ -144,9 +144,9 @@ KEYBOARDS = {
             }
         },
         "other_campus_stats_button" : {
-           "english": {"text":"Show the report of the {} campus too", "callback_data" : "show_other_campus_stats"},
-            "russian": {"text":"Показать отчёт по кампусу в {}e тоже", "callback_data" : "show_other_campus_stats"},
-            "uzbek": {"text":"{} kampusini ham bo'yicha hisobotni ko'rsatish", "callback_data" : "show_other_campus_stats"},
+           "english": {"text":"Show the report of the other campus", "callback_data" : "show_other_campus_stats"},
+            "russian": {"text":"Показать отчёт по другому кампусу", "callback_data" : "show_other_campus_stats"},
+            "uzbek": {"text":"Boshqa kampus bo'yicha hisobotni ko'rsatish", "callback_data" : "show_other_campus_stats"},
  
         }
     },

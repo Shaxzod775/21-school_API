@@ -96,24 +96,42 @@ def init_table_posts():
         cursor.execute('''CREATE TABLE IF NOT EXISTS posts (
                             id INTEGER PRIMARY KEY AUTOINCREMENT,
                             task TEXT UNIQUE NOT NULL,
-                            url_passed_english TEXT UNIQUE,
-                            url_passed_russian TEXT UNIQUE,
-                            url_passed_uzbek TEXT UNIQUE,
-                            url_hundred_english TEXT UNIQUE,
-                            url_hundred_russian TEXT UNIQUE,
-                            url_hundred_uzbek TEXT UNIQUE,
-                            url_scored_didnt_pass_english TEXT UNIQUE,
-                            url_scored_didnt_pass_russian TEXT UNIQUE,
-                            url_scored_didnt_pass_uzbek TEXT UNIQUE,
-                            url_in_progress_english TEXT UNIQUE,
-                            url_in_progress_russian TEXT UNIQUE,
-                            url_in_progress_uzbek TEXT UNIQUE,
-                            url_in_reviews_english TEXT UNIQUE,
-                            url_in_reviews_russian TEXT UNIQUE,
-                            url_in_reviews_uzbek TEXT UNIQUE,
-                            url_registered_english TEXT UNIQUE,
-                            url_registered_russian TEXT UNIQUE,
-                            url_registered_uzbek TEXT UNIQUE
+                            url_passed_english_tashkent TEXT UNIQUE,
+                            url_passed_russian_tashkent TEXT UNIQUE,
+                            url_passed_uzbek_tashkent TEXT UNIQUE,
+                            url_hundred_english_tashkent TEXT UNIQUE,
+                            url_hundred_russian_tashkent TEXT UNIQUE,
+                            url_hundred_uzbek_tashkent TEXT UNIQUE,
+                            url_scored_didnt_pass_english_tashkent TEXT UNIQUE,
+                            url_scored_didnt_pass_russian_tashkent TEXT UNIQUE,
+                            url_scored_didnt_pass_uzbek_tashkent TEXT UNIQUE,
+                            url_in_progress_english_tashkent TEXT UNIQUE,
+                            url_in_progress_russian_tashkent TEXT UNIQUE,
+                            url_in_progress_uzbek_tashkent TEXT UNIQUE,
+                            url_in_reviews_english_tashkent TEXT UNIQUE,
+                            url_in_reviews_russian_tashkent TEXT UNIQUE,
+                            url_in_reviews_uzbek_tashkent TEXT UNIQUE,
+                            url_registered_english_tashkent TEXT UNIQUE,
+                            url_registered_russian_tashkent TEXT UNIQUE,
+                            url_registered_uzbek_tashkent TEXT UNIQUE,
+                            url_passed_english_samarkand TEXT UNIQUE,
+                            url_passed_russian_samarkand  TEXT UNIQUE,
+                            url_passed_uzbek_samarkand TEXT UNIQUE,
+                            url_hundred_english_samarkand TEXT UNIQUE,
+                            url_hundred_russian_samarkand TEXT UNIQUE,
+                            url_hundred_uzbek_samarkand TEXT UNIQUE,
+                            url_scored_didnt_pass_english_samarkand TEXT UNIQUE,
+                            url_scored_didnt_pass_russian_samarkand TEXT UNIQUE,
+                            url_scored_didnt_pass_uzbek_samarkand TEXT UNIQUE,
+                            url_in_progress_english_samarkand TEXT UNIQUE,
+                            url_in_progress_russian_samarkand TEXT UNIQUE,
+                            url_in_progress_uzbek_samarkand TEXT UNIQUE,
+                            url_in_reviews_english_samarkand TEXT UNIQUE,
+                            url_in_reviews_russian_samarkand TEXT UNIQUE,
+                            url_in_reviews_uzbek_samarkand TEXT UNIQUE,
+                            url_registered_english_samarkand TEXT UNIQUE,
+                            url_registered_russian_samarkand TEXT UNIQUE,
+                            url_registered_uzbek_samarkand TEXT UNIQUE
                         )''')
 
         conn.commit()
@@ -127,23 +145,31 @@ def init_table_posts():
             conn.close()
 
 
+def _validate_url_type(url_type):  # Helper function to validate url_type
+    allowed_columns = [
+        'url_passed_english_tashkent', 'url_passed_russian_tashkent', 'url_passed_uzbek_tashkent',
+        'url_hundred_english_tashkent', 'url_hundred_russian_tashkent', 'url_hundred_uzbek_tashkent',
+        'url_scored_didnt_pass_english_tashkent', 'url_scored_didnt_pass_russian_tashkent', 'url_scored_didnt_pass_uzbek_tashkent',
+        'url_in_progress_english_tashkent', 'url_in_progress_russian_tashkent', 'url_in_progress_uzbek_tashkent',
+        'url_in_reviews_english_tashkent', 'url_in_reviews_russian_tashkent', 'url_in_reviews_uzbek_tashkent',
+        'url_registered_english_tashkent', 'url_registered_russian_tashkent', 'url_registered_uzbek_tashkent',
+        'url_passed_english_samarkand', 'url_passed_russian_samarkand', 'url_passed_uzbek_samarkand',
+        'url_hundred_english_samarkand', 'url_hundred_russian_samarkand', 'url_hundred_uzbek_samarkand',
+        'url_scored_didnt_pass_english_samarkand', 'url_scored_didnt_pass_russian_samarkand', 'url_scored_didnt_pass_uzbek_samarkand',
+        'url_in_progress_english_samarkand', 'url_in_progress_russian_samarkand', 'url_in_progress_uzbek_samarkand',
+        'url_in_reviews_english_samarkand', 'url_in_reviews_russian_samarkand', 'url_in_reviews_uzbek_samarkand',
+        'url_registered_english_samarkand', 'url_registered_russian_samarkand', 'url_registered_uzbek_samarkand'
+    ]
+    if url_type not in allowed_columns:
+        raise ValueError(f"Invalid url_type: {url_type}")
+
 
 def create_post(task, url, url_type):
-    """
-    Inserts or updates a post entry in the 'posts' table.
-
-    Parameters:
-    - task (str): The task identifier.
-    - url (str): The URL to store.
-    - url_type (str): The column name where the URL should be stored (e.g., 'url_passed', 'url_in_reviews').
-    """
     conn = sqlite3.connect('posts.db')
     cursor = conn.cursor()
 
     try:
-        allowed_columns = {'url_passed_english', 'url_passed_russian', 'url_passed_uzbek', 'url_hundred_english', 'url_hundred_russian', 'url_hundred_uzbek', 'url_scored_didnt_pass_english', 'url_scored_didnt_pass_russian', 'url_scored_didnt_pass_uzbek', 'url_in_progress_english', 'url_in_progress_russian', 'url_in_progress_uzbek', 'url_in_reviews_english', 'url_in_reviews_russian', 'url_in_reviews_uzbek', 'url_registered_english', 'url_registered_russian', 'url_registered_uzbek'}
-        if url_type not in allowed_columns:
-            raise ValueError(f"Invalid url_type: {url_type}")
+        _validate_url_type(url_type)  # Validate the url_type
 
         cursor.execute("SELECT * FROM posts WHERE task = ?", (task,))
         existing = cursor.fetchone()
@@ -151,76 +177,155 @@ def create_post(task, url, url_type):
         if existing:
             cursor.execute(f"UPDATE posts SET {url_type} = ? WHERE task = ?", (url, task))
         else:
-            # Insert a new record
             cursor.execute(f"INSERT INTO posts (task, {url_type}) VALUES (?, ?)", (task, url))
 
         conn.commit()
-        print("Post saved successfully.")
+        print(f"Post saved successfully. {url_type} URL = {url}")
 
     except sqlite3.Error as e:
         print(f"Error creating/updating post: {e}")
         conn.rollback()
+    except ValueError as e: # Catch the ValueError if the url_type is invalid
+        print(e)
 
     finally:
         conn.close()
 
+
 def get_post(task, url_type):
-    """
-    Retrieves a specific URL from the 'posts' table for a given task.
-
-    Parameters:
-    - task (str): The task identifier.
-    - url_type (str): The column name to retrieve (e.g., 'url_passed', 'url_in_reviews').
-
-    Returns:
-    - str: The URL if found, otherwise None.
-    """
-
     conn = sqlite3.connect('posts.db')
     cursor = conn.cursor()
 
-    allowed_columns = {'url_passed_english', 'url_passed_russian', 'url_passed_uzbek', 'url_hundred_english', 'url_hundred_russian', 'url_hundred_uzbek', 'url_scored_didnt_pass_english', 'url_scored_didnt_pass_russian', 'url_scored_didnt_pass_uzbek', 'url_in_progress_english', 'url_in_progress_russian', 'url_in_progress_uzbek', 'url_in_reviews_english', 'url_in_reviews_russian', 'url_in_reviews_uzbek', 'url_registered_english', 'url_registered_russian', 'url_registered_uzbek'}
-    if url_type not in allowed_columns:
-        raise ValueError(f"Invalid url_type: {url_type}")
+    try:
+        _validate_url_type(url_type)
 
-    cursor.execute(f"SELECT {url_type} FROM posts WHERE task = ?", (task,))
-    post = cursor.fetchone()
+        cursor.execute(f"SELECT {url_type} FROM posts WHERE task = ?", (task,))
+        post = cursor.fetchone()
 
-    conn.close()
+        return post[0] if post and post[0] else None
 
-    return post[0] if post and post[0] else None  # Return the URL or None
+    except ValueError as e:
+        print(e)
+        return None  # Return None if invalid url_type
+    finally:
+        conn.close()
 
 
 def update_post(task, url_type, url):
-    """
-    Updates a specific URL field for a task in the 'posts' table.
-
-    Parameters:
-    - task (str): The task identifier.
-    - url_type (str): The column name to update (e.g., 'url_passed', 'url_in_reviews').
-    - url (str): The new URL to set.
-
-    Returns:
-    - bool: True if an update was made, False otherwise.
-    """
-
     if not url:
-        return False  
+        return False
+
     conn = sqlite3.connect('posts.db')
     cursor = conn.cursor()
 
-    allowed_columns = {'url_passed_english', 'url_passed_russian', 'url_passed_uzbek', 'url_hundred_english', 'url_hundred_russian', 'url_hundred_uzbek', 'url_scored_didnt_pass_english', 'url_scored_didnt_pass_russian', 'url_scored_didnt_pass_uzbek', 'url_in_progress_english', 'url_in_progress_russian', 'url_in_progress_uzbek', 'url_in_reviews_english', 'url_in_reviews_russian', 'url_in_reviews_uzbek', 'url_registered_english', 'url_registered_russian', 'url_registered_uzbek'}
-    if url_type not in allowed_columns:
-        raise ValueError(f"Invalid url_type: {url_type}")
+    try:
+        _validate_url_type(url_type)
 
-    cursor.execute(f"UPDATE posts SET {url_type} = ? WHERE task = ?", (url, task))
-    conn.commit()
-    
-    updated = cursor.rowcount > 0  # Check if any row was affected
+        cursor.execute(f"UPDATE posts SET {url_type} = ? WHERE task = ?", (url, task))
+        conn.commit()
 
-    conn.close()
+        updated = cursor.rowcount > 0
+
+        return updated
+    except ValueError as e:
+        print(e)
+        return False
+    finally:
+        conn.close()
+
+# def create_post(task, url, url_type):
+#     """
+#     Inserts or updates a post entry in the 'posts' table.
+
+#     Parameters:
+#     - task (str): The task identifier.
+#     - url (str): The URL to store.
+#     - url_type (str): The column name where the URL should be stored (e.g., 'url_passed', 'url_in_reviews').
+#     """
+#     conn = sqlite3.connect('posts.db')
+#     cursor = conn.cursor()
+
+#     try:
+#         allowed_columns = {'url_passed_english', 'url_passed_russian', 'url_passed_uzbek', 'url_hundred_english', 'url_hundred_russian', 'url_hundred_uzbek', 'url_scored_didnt_pass_english', 'url_scored_didnt_pass_russian', 'url_scored_didnt_pass_uzbek', 'url_in_progress_english', 'url_in_progress_russian', 'url_in_progress_uzbek', 'url_in_reviews_english', 'url_in_reviews_russian', 'url_in_reviews_uzbek', 'url_registered_english', 'url_registered_russian', 'url_registered_uzbek'}
+#         if url_type not in allowed_columns:
+#             raise ValueError(f"Invalid url_type: {url_type}")
+
+#         cursor.execute("SELECT * FROM posts WHERE task = ?", (task,))
+#         existing = cursor.fetchone()
+
+#         if existing:
+#             cursor.execute(f"UPDATE posts SET {url_type} = ? WHERE task = ?", (url, task))
+#         else:
+#             # Insert a new record
+#             cursor.execute(f"INSERT INTO posts (task, {url_type}) VALUES (?, ?)", (task, url))
+
+#         conn.commit()
+#         print("Post saved successfully.")
+
+#     except sqlite3.Error as e:
+#         print(f"Error creating/updating post: {e}")
+#         conn.rollback()
+
+#     finally:
+#         conn.close()
+
+# def get_post(task, url_type):
+#     """
+#     Retrieves a specific URL from the 'posts' table for a given task.
+
+#     Parameters:
+#     - task (str): The task identifier.
+#     - url_type (str): The column name to retrieve (e.g., 'url_passed', 'url_in_reviews').
+
+#     Returns:
+#     - str: The URL if found, otherwise None.
+#     """
+
+#     conn = sqlite3.connect('posts.db')
+#     cursor = conn.cursor()
+
+#     allowed_columns = {'url_passed_english', 'url_passed_russian', 'url_passed_uzbek', 'url_hundred_english', 'url_hundred_russian', 'url_hundred_uzbek', 'url_scored_didnt_pass_english', 'url_scored_didnt_pass_russian', 'url_scored_didnt_pass_uzbek', 'url_in_progress_english', 'url_in_progress_russian', 'url_in_progress_uzbek', 'url_in_reviews_english', 'url_in_reviews_russian', 'url_in_reviews_uzbek', 'url_registered_english', 'url_registered_russian', 'url_registered_uzbek'}
+#     if url_type not in allowed_columns:
+#         raise ValueError(f"Invalid url_type: {url_type}")
+
+#     cursor.execute(f"SELECT {url_type} FROM posts WHERE task = ?", (task,))
+#     post = cursor.fetchone()
+
+#     conn.close()
+
+#     return post[0] if post and post[0] else None  # Return the URL or None
+
+
+# def update_post(task, url_type, url):
+#     """
+#     Updates a specific URL field for a task in the 'posts' table.
+
+#     Parameters:
+#     - task (str): The task identifier.
+#     - url_type (str): The column name to update (e.g., 'url_passed', 'url_in_reviews').
+#     - url (str): The new URL to set.
+
+#     Returns:
+#     - bool: True if an update was made, False otherwise.
+#     """
+
+#     if not url:
+#         return False  
+#     conn = sqlite3.connect('posts.db')
+#     cursor = conn.cursor()
+
+#     allowed_columns = {'url_passed_english', 'url_passed_russian', 'url_passed_uzbek', 'url_hundred_english', 'url_hundred_russian', 'url_hundred_uzbek', 'url_scored_didnt_pass_english', 'url_scored_didnt_pass_russian', 'url_scored_didnt_pass_uzbek', 'url_in_progress_english', 'url_in_progress_russian', 'url_in_progress_uzbek', 'url_in_reviews_english', 'url_in_reviews_russian', 'url_in_reviews_uzbek', 'url_registered_english', 'url_registered_russian', 'url_registered_uzbek'}
+#     if url_type not in allowed_columns:
+#         raise ValueError(f"Invalid url_type: {url_type}")
+
+#     cursor.execute(f"UPDATE posts SET {url_type} = ? WHERE task = ?", (url, task))
+#     conn.commit()
     
-    return updated
+#     updated = cursor.rowcount > 0  # Check if any row was affected
+
+#     conn.close()
+    
+#     return updated
 
 def get_1():
     conn = sqlite3.connect('users.db')
@@ -234,7 +339,6 @@ def get_1():
 
 
 if __name__ == '__main__':
-    # drop_table("posts")
     drop_table("posts")
     init_table_posts()
 

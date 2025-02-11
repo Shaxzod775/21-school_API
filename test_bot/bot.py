@@ -322,16 +322,15 @@ async def show_specific_task_info(update: Update, context: ContextTypes.DEFAULT_
     await query.answer()
 
     language, campus = await _get_user_language_and_campus(update, context)
-    the_other_campus = "samarkand" if campus == "tashkent" else "tashkent"
 
     task = str()
     task_id = str()
     report = dict()
     result = list()
 
-    task = query.data  # Assign task if it's not the "show_other_campus" click
+    task = query.data  
     context.user_data['task'] = task
-    context.user_data['current_campus'] = campus # Store current campus
+    context.user_data['current_campus'] = campus 
     task_id = TASKS_INTENSIVE_BOT[task]
 
     report = make_report(task, language, campus)
@@ -340,10 +339,16 @@ async def show_specific_task_info(update: Update, context: ContextTypes.DEFAULT_
     for report_type in ['passed', 'hundred', 'scored_didnt_pass', 'in_progress', 'in_reviews', 'registered']:
         students = report.get(f'scored_{report_type}' if report_type != 'passed' else 'passed_students')
         if students:
-            await _process_report_type(task, students, report_type, language, task_id, result)
+            await _process_report_type(task, students, report_type, language, task_id, result, context.user_data['campus'][0])
 
-    other_campus_stats_button = await _create_other_campus_button(the_other_campus, language)
-    reply_markup = InlineKeyboardMarkup([other_campus_stats_button, [InlineKeyboardButton(KEYBOARDS['button']['stats']['keyboard'][language][-1]['text'], callback_data='go_back')]])
+
+    text_show_other_campus = KEYBOARDS['show_specific_task_info']['other_campus_stats_button'][language]['text']
+    callback_data = "show_other_campus_task_info" 
+
+    reply_markup = InlineKeyboardMarkup([
+        [InlineKeyboardButton(text_show_other_campus, callback_data=callback_data)],
+        [InlineKeyboardButton(KEYBOARDS['button']['stats']['keyboard'][language][-1]['text'], callback_data='go_back')]
+        ])
 
     await query.edit_message_caption("".join(result))
     await query.edit_message_reply_markup(reply_markup=reply_markup)
@@ -354,29 +359,33 @@ async def show_other_campus_task_info(update: Update, context: ContextTypes.DEFA
     task = context.user_data.get('task')
     language, campus = await _get_user_language_and_campus(update, context) 
 
-    # Ensure 'campus' exists
     if 'campus' not in context.user_data:
-        context.user_data['campus'] = campus  # Default
+        context.user_data['campus'] = campus  
 
     current_campus = context.user_data['campus']
 
     if isinstance(context.user_data['campus'], tuple):
         current_campus = context.user_data['campus'][0]
-    
 
     other_campus = str()
+
+    other_campuses = {
+        "tashkent": "samarkand",
+        "samarkand": "tashkent"
+    }
+
+    other_campus = other_campuses[campus]
 
     if current_campus == "tashkent":
         other_campus = "samarkand"
         context.user_data['campus'] = "samarkand"
-    elif current_campus == "samarkand":  # current_campus must be "samarkand"
+    elif current_campus == "samarkand": 
         other_campus = "tashkent"
         context.user_data['campus'] = "tashkent"
 
     print(f"Switching from {current_campus} to {other_campus}")
 
     report_other = make_report(task, language, other_campus)
-    # print(f"Generated Report for {other_campus}: {report_other}")
 
     result = [report_other['report']]
     task_id = TASKS_INTENSIVE_BOT[task]
@@ -384,56 +393,22 @@ async def show_other_campus_task_info(update: Update, context: ContextTypes.DEFA
     for report_type in ['passed', 'hundred', 'scored_didnt_pass', 'in_progress', 'in_reviews', 'registered']:
         students = report_other.get(f'scored_{report_type}' if report_type != 'passed' else 'passed_students')
         if students:
-            await _process_report_type(task, students, report_type, language, task_id, result)
+            await _process_report_type(task, students, report_type, language, task_id, result, other_campus)
 
     combined_report = "".join(result)
 
     current_caption = update.effective_message.caption
 
     if not current_caption or combined_report.strip() != current_caption.strip():
-        other_campus_stats_button = await _create_other_campus_button(other_campus, language)  # FIXED
+        text_show_other_campus = KEYBOARDS['show_specific_task_info']['other_campus_stats_button'][language]['text']
+        callback_data = "show_other_campus_task_info" 
         reply_markup = InlineKeyboardMarkup([
-            other_campus_stats_button, 
+            [InlineKeyboardButton(text_show_other_campus, callback_data=callback_data)],
             [InlineKeyboardButton(KEYBOARDS['button']['stats']['keyboard'][language][-1]['text'], callback_data='go_back')]
         ])
         await update.effective_message.edit_caption(combined_report, reply_markup=reply_markup)
     else:
         print("Caption is the same. Not updating.")
-
-
-async def _get_students_string(students, report_type, language):
-    descriptions = {     
-        'english': {
-            'passed': "Passed the project",
-            'hundred': "Scored 100%",
-            'didnt_pass': "Didn't pass the project",
-            'in_progress': "Are working on the project",
-            'in_reviews': "Are waiting for review",
-            'registered': "Are registered"
-        },
-        'russian': {
-            'passed': "Cдали проект",
-            'hundred': "Набрали 100%",
-            'didnt_pass': "Не сдали проект",
-            'in_progress': "Выполняют проект",
-            'in_reviews': "Ожидают проверку",
-            'registered': "Зарегистрированы"
-        },
-        'uzbek': {
-            'passed': "Loyihani topshirgan",
-            'hundred': "100% ball olgan",
-            'didnt_pass': "Loyihani topshirmagan",
-            'in_progress': "Loyiha ustida ishlamoqda",
-            'in_reviews': "Tekshiruvni kutmoqda",
-            'registered': "Ro'yxatdan o'tgan"
-        }    
-    }
-    students_str = "------------------------------------------------------------------------\n\n"
-    for student in students:
-        students_str += f"{descriptions[language][report_type]}: {student[0]} - {student[1]}\n" # Format the string as you want
-    students_str += "\n"
-    return students_str
-
 
 
 async def _get_user_language_and_campus(update: Update, context: ContextTypes.DEFAULT_TYPE) -> tuple:
@@ -450,10 +425,9 @@ async def _get_user_language_and_campus(update: Update, context: ContextTypes.DE
 
 
 
-
-async def _process_report_type(task, students, report_type, language, task_id, result):
+async def _process_report_type(task, students, report_type, language, task_id, result, current_campus):
     for lang in ['english', 'russian', 'uzbek']:
-        post_url = get_post(task, f'url_{report_type}_{lang}')
+        post_url = get_post(task, f'url_{report_type}_{lang}_{current_campus}')
         if not post_url:
             titles = {
                 'english': {
@@ -482,12 +456,18 @@ async def _process_report_type(task, students, report_type, language, task_id, r
                 }
             }
 
+            if language == "russian": 
+                    campus_language_specified = "Ташкент" if current_campus == "tashkent" else "Самарканд"
+            else:
+                campus_language_specified = current_campus.capitalize()
+
             post_url = create_telegraph_post(
-                TELEGRAPH_TOKEN,
-                f"{titles[lang][report_type]}",
-                make_content(students, task_id, lang)
-            )['result']['url']
-            create_post(task, post_url, f'url_{report_type}_{lang}')
+                            TELEGRAPH_TOKEN,
+                            f"{titles[lang][report_type]} ({task}) {campus_language_specified.capitalize()}",
+                            make_content(students, task_id, lang) #Make sure students are filtered by campus in make_content
+                        )['result']['url']
+            create_post(task, post_url, f'url_{report_type}_{lang}_{current_campus}')
+            time.sleep(1)
 
         if lang == language:
             descriptions = {
@@ -519,19 +499,6 @@ async def _process_report_type(task, students, report_type, language, task_id, r
 
             result.append("------------------------------------------------------------------------\n\n")
             result.append(f"{descriptions[lang][report_type]}: {post_url}\n\n")
-
-
-async def _create_other_campus_button(the_other_campus, language):
-    if language == "russian":
-        the_other_campus_language_specified = "Ташкент" if the_other_campus == "tashkent" else "Самарканд"
-    else:
-        the_other_campus_language_specified = "Tashkent" if the_other_campus == "tashkent" else "Samarkand"
-
-    text_show_other_campus = KEYBOARDS['show_specific_task_info']['other_campus_stats_button'][language]['text'].format(
-        the_other_campus_language_specified)
-    callback_data = "show_other_campus_task_info"  # Consistent callback data
-
-    return [InlineKeyboardButton(text_show_other_campus, callback_data=callback_data)]
 
 
 
