@@ -1,4 +1,4 @@
-#!/mnt/d/pet-project/21-school_API/venv/bin/python3
+#!/mnt/d/pet-project/new/21-school_API/venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys
