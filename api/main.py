@@ -212,7 +212,6 @@ def get_info_participant_project_percent(access_token, username, projectId):
     return _return
 
 def get_specific_project_complеtion_info(access_token, project_id, week, project_name, filename):
-    try:
         HEADERS = {
         'Authorization': 'Bearer {}'.format(access_token),
         }
@@ -236,7 +235,7 @@ def get_specific_project_complеtion_info(access_token, project_id, week, projec
 
             new_students_samarkand = students_samarkand[:len(students_samarkand) - 1]
 
-            try:
+            if not os.path.exists(f"data/tasks/tashkent/{week}/{project_name}/{project_name}.csv"):
                 with open(f'data/tasks/tashkent/{week}/{project_name}/{project_name}.csv', "w+") as file_result_tashkent:
                     file_result_tashkent.write('student,title,type,status,final score\n')
                     for i in range(len(new_students_tashkent)):
@@ -252,7 +251,8 @@ def get_specific_project_complеtion_info(access_token, project_id, week, projec
                                 time.sleep(1)
                             else:
                                 raise Exception(f"There was a problem during parsing scores from the api!\n{response.status_code}\n{response.text}")
-                
+            
+            if not os.path.exists(f"data/tasks/samarkand/{week}/{project_name}/{project_name}.csv"):
                 with open(f'data/tasks/samarkand/{week}/{project_name}/{project_name}.csv', "w+") as file_result_samarkand:
                     file_result_samarkand.write('student,title,type,status,final score\n')
                     for i in range(len(new_students_samarkand)):
@@ -267,13 +267,9 @@ def get_specific_project_complеtion_info(access_token, project_id, week, projec
                                 print(f'{new_students_samarkand[i]},{title},{type},{status},{final_percentage}')
                                 time.sleep(1)
                             else:
-                                raise Exception(f"There was a problem during parsing scores from the api!\n{response.status_code}\n{response.text}")
-            except Exception:
-                raise Exception
+                                raise Exception(f"There was a problem during parsing scores from the api!\n{response.status_code}\n{response.text}") 
 
-    except Exception:
-        raise Exception
-    
+
 def sort_task_data(filename):
     try:
         if not os.path.exists(filename) :
@@ -588,7 +584,7 @@ def main():
             #             get_specific_project_complеtion_info(token, str(project_id), week, task, 'intensiv_participants.csv')
 
             #         exam_report(task, f"data/tasks/tashkent/{week}/{task}/{task}.csv")
-            exam_report(task, f"data/tasks/tashkent/{week}/{task}/{task}.csv")
+            exam_report(task)
 
 
 
