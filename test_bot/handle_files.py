@@ -1,6 +1,8 @@
 import sys
 sys.path.append("..")
 
+import datetime
+
 from api.main import *
 from config_api import *
 
@@ -8,6 +10,7 @@ from config import *
 from telegram.helpers import escape_markdown
 from posts import *
 from db import *
+from api.db_api import *
 
 def read_main_csv(filepath):
     with open(filepath, "r+") as file:
@@ -27,6 +30,18 @@ def make_report(task, language, campus_arg):
     _, week = INTENSIVE[task]
 
     _return['campus'] = campus_arg
+
+    _, being_parsed, start_date, end_date = get_task(task)
+
+    time = datetime.datetime()
+
+    if time.now() < start_date:
+        return {'report': {  
+            "english": "Report is being made",
+            "russian": "Отчет еще не готов",
+            "uzbek": "Hisobot hali tayyor emas"
+        }[language]}
+        
 
     filepath = f'../api/data/tasks/{campus_arg}/{week}/{task}/{task}.csv'
     if not os.path.exists(filepath):

@@ -7,8 +7,7 @@ sys.path.append("./")
 import requests
 import json
 import time
-import datetime
-import pytz
+from .db_api import *
 from config_api import *
 
 
@@ -311,7 +310,6 @@ def sort_task_data(filename):
     except Exception:
         raise Exception
 
-# def report_during_exam():
 
 def task_report(task, filepath):
         _, week = INTENSIVE[task]
@@ -538,8 +536,10 @@ def main():
     if len(sys.argv) > 1:
         if sys.argv[1] not in INTENSIVE:
             raise Exception(f"The entered tasks is not among the intensive tasks")
-
+        
         task = sys.argv[1]
+
+        update_task(task, has_been_parsed=None, being_parsed=1)
 
         get_api_token()
         token = get_file_token()
@@ -569,24 +569,10 @@ def main():
             if not os.path.exists(f'data/tasks/tashkent/{week}/{task}/task_report.txt') or not os.path.exists(f'data/tasks/samarkand/{week}/{task}/task_report.txt'):
                 task_report(task, f'data/tasks/tashkent/{week}/{task}/{task}.csv')
                 task_report(task, f'data/tasks/samarkand/{week}/{task}/{task}.csv')
+                update_task(task, has_been_parsed=1, being_parsed=0)
         else:
-            # if not os.path.exists(f"data/tasks/tashkent/{week}/{task}/details/registered.csv") or not os.path.exists(f"data/tasks/samarkand/{week}/{task}/details/registered.csv"):
-            #     sort_exam_data_before(f"data/tasks/tashkent/{week}/{task}/{task}.csv")
-            #     sort_exam_data_before(f"data/tasks/samarkand/{week}/{task}/{task}.csv")
-            # elif os.path.exists(f"data/tasks/tashkent/{week}/{task}/") and os.path.exists(f"data/tasks/samarkand/{week}/{task}/") :
-            #     # Get current time in Tashkent
-            #     tashkent_timezone = pytz.timezone("Asia/Tashkent")  # Or appropriate IANA timezone name
-            #     now = datetime.datetime.now(tashkent_timezone)
-
-            #     # Check if it's Friday and after 6:30 PM
-            #     if now.weekday() == 4 and now.hour >= 18 and now.minute >= 30:  # Friday is 4 (Monday is 0)
-            #         if not os.path.exists(f"data/tasks/tashkent/{week}/{task}/{task}.csv") or os.path.exists(f"data/tasks/samarkand/{week}/{task}/{task}.csv"):
-            #             get_specific_project_complеtion_info(token, str(project_id), week, task, 'intensiv_participants.csv')
-
-            #         exam_report(task, f"data/tasks/tashkent/{week}/{task}/{task}.csv")
             exam_report(task)
-
-
+            update_task(task, has_been_parsed=1, being_parsed=0)
 
 
 

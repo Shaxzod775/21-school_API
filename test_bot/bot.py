@@ -9,6 +9,7 @@ from db import *
 from config import *
 from api.main import *
 from handle_files import *
+from api.db_api import *
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -226,19 +227,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     #     # Show the current stream and options to change it
     #     current_stream = context.user_data.get('stream', 'не выбран')
     #     keyboard = [
-    #         [InlineKeyboardButton("Интенсис", callback_data='stream_intensiv')],
-    #         [InlineKeyboardButton("Основа", callback_data='stream_osnova')]
-    #     ]
-    #     reply_markup = InlineKeyboardMarkup(keyboard)
-    #     await query.edit_message_text(text=f"Ваш текущий поток: {current_stream.capitalize()}. Хотите изменить?", reply_markup=reply_markup)
-
-    # elif query.data == "go_back":
-    #     await query.delete_message()
-    #     await context.bot.send_message( chat_id=update.effective_chat.id, text="Выберите опцию:", reply_markup=reply_markup)
-    #     await query.edit_message_text(await show_main_options(update, context))
-
-async def change_language(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    query = update.callback_query
+    #         [InlineKeyboardButton("Интенсис", callback_data='stupdate_task(task, has_been_parsed=1, being_parsed=0)
     await query.answer()
 
     try:
@@ -345,10 +334,15 @@ async def show_specific_task_info(update: Update, context: ContextTypes.DEFAULT_
     text_show_other_campus = KEYBOARDS['show_specific_task_info']['other_campus_stats_button'][language]['text']
     callback_data = "show_other_campus_task_info" 
 
-    reply_markup = InlineKeyboardMarkup([
-        [InlineKeyboardButton(text_show_other_campus, callback_data=callback_data)],
-        [InlineKeyboardButton(KEYBOARDS['button']['stats']['keyboard'][language][-1]['text'], callback_data='go_back')]
-        ])
+    not_ready_yet = ["Report is not yet ready", "Отчет еще не готов","Hisobot hali tayyor emas"]
+
+    buttons = [[InlineKeyboardButton(KEYBOARDS['button']['stats']['keyboard'][language][-1]['text'], callback_data='go_back')]]
+
+    if result[0] not in not_ready_yet:
+        buttons.insert(0, [InlineKeyboardButton(text_show_other_campus, callback_data=callback_data)])
+
+    reply_markup = InlineKeyboardMarkup(buttons)
+            
 
     await query.edit_message_caption("".join(result))
     await query.edit_message_reply_markup(reply_markup=reply_markup)
@@ -406,6 +400,7 @@ async def show_other_campus_task_info(update: Update, context: ContextTypes.DEFA
             [InlineKeyboardButton(text_show_other_campus, callback_data=callback_data)],
             [InlineKeyboardButton(KEYBOARDS['button']['stats']['keyboard'][language][-1]['text'], callback_data='go_back')]
         ])
+
         await update.effective_message.edit_caption(combined_report, reply_markup=reply_markup)
     else:
         print("Caption is the same. Not updating.")
@@ -464,7 +459,7 @@ async def _process_report_type(task, students, report_type, language, task_id, r
             post_url = create_telegraph_post(
                             TELEGRAPH_TOKEN,
                             f"{titles[lang][report_type]} ({task}) {campus_language_specified.capitalize()}",
-                            make_content(students, task_id, lang) #Make sure students are filtered by campus in make_content
+                            make_content(students, task_id, lang)
                         )['result']['url']
             create_post(task, post_url, f'url_{report_type}_{lang}_{current_campus}')
             time.sleep(1)
