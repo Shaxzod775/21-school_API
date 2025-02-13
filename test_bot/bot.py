@@ -246,6 +246,32 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     await query.edit_message_reply_markup(reply_markup=reply_markup_language)
 
+
+
+
+
+async def change_language(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    await query.answer()
+
+    try:
+        language = get_data(update.effective_chat.id, 'language')
+    except KeyError as e:
+        raise KeyError(f"An error occured\n{e}")
+
+    keyboard_language = [
+        [InlineKeyboardButton("English", callback_data='changed_lang_english')],
+        [InlineKeyboardButton("Русский", callback_data='changed_lang_russian')],
+        [InlineKeyboardButton("O'zbek", callback_data='changed_lang_uzbek')],
+    ]
+    keyboard_language.append([KEYBOARDS['button']['stats']['keyboard'][language[0]][-1]])
+
+    reply_markup_language = InlineKeyboardMarkup(keyboard_language)
+
+    await query.edit_message_reply_markup(reply_markup=reply_markup_language)
+
+
+
 async def language_changed(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()

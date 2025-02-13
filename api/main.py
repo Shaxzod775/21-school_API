@@ -7,7 +7,8 @@ sys.path.append("./")
 import requests
 import json
 import time
-from .db_api import *
+import datetime
+from db_api import *
 from config_api import *
 
 
@@ -532,47 +533,150 @@ def exam_report(task):
                 file1_samarkand.write(f"{student}\n")
 
 
-def main():
-    if len(sys.argv) > 1:
-        if sys.argv[1] not in INTENSIVE:
-            raise Exception(f"The entered tasks is not among the intensive tasks")
+def parse_student_info(access_token):
+    HEADERS = {
+    'Authorization': 'Bearer {}'.format(access_token),
+    }
+
+    if os.path.exists(f"data/participants/tashkent/intensiv_participants.csv") and os.path.exists(f"data/participants/samarkand/intensiv_participants.csv"):
+        students_tahkent = list()
+        with open(f"data/participants/tashkent/intensiv_participants.csv", 'r') as file_tashkent:
+            student = file_tashkent.readline()
+            while student:
+                student = file_tashkent.readline()
+                students_tahkent.append(student.strip())
+
+        new_students_tashkent = students_tahkent[:len(students_tahkent) - 1]
         
-        task = sys.argv[1]
+        students_samarkand = list()
+        with open(f"data/participants/samarkand/intensiv_participants.csv", 'r') as file_samarkand:
+            student = file_samarkand.readline()
+            while student:
+                student = file_samarkand.readline()
+                students_samarkand.append(student.strip())
 
-        update_task(task, has_been_parsed=None, being_parsed=1)
+        new_students_samarkand = students_samarkand[:len(students_samarkand) - 1]
 
-        get_api_token()
-        token = get_file_token()
+        # try:
+        #     with open("data/participants/tashkent/small_info.csv", "w+") as file_result_tashkent:
+        #         file_result_tashkent.write(f"student,level,expValue\n")
+        #         for i in range(len(new_students_tashkent)):
+        #                 response = requests.get(BASE_URL.format(f"/participants/{new_students_tashkent[i]}"), headers=HEADERS)
+        #                 if response.status_code == 200:
+        #                     response_json = json.loads(response.text)
+        #                     exp = response_json['expValue']
+        #                     level = response_json['level']
+        #                     print(f'{new_students_tashkent[i]},{level},{exp}')
+        #                     file_result_tashkent.write(f'{new_students_tashkent[i]},{exp},{level}')
+        #                     time.sleep(1)
+
+        #     with open("data/participants/samarkand/small_info.csv", "w+") as file_result_samarkand:
+        #         file_result_samarkand.write(f"student,level,expValue\n")
+        #         for i in range(len(new_students_samarkand)):
+        #                 response = requests.get(BASE_URL.format(f"/participants/{new_students_samarkand[i]}"), headers=HEADERS)
+        #                 if response.status_code == 200:
+        #                     response_json = json.loads(response.text)
+        #                     level = response_json['level']
+        #                     exp = response_json['expValue']
+        #                     print(f'{new_students_samarkand[i]},{level},{exp}')
+        #                     file_result_samarkand.write(f'{new_students_samarkand[i]},{exp},{level}')
+        #                     time.sleep(1)
+        # except Exception as e:
+        #     raise Exception(f"There was a problem during parsing from the api {e}")
+
+
+        try:
+            intensive_start_date = datetime.date(2025, 1, 27) 
+            today = datetime.date.today()
+            one_week_ago = today - datetime.timedelta(weeks=1)
+            date_to_use = one_week_ago if one_week_ago - datetime.timedelta(weeks=1) > intensive_start_date else intensive_start_date
+
+            with open("data/participants/tashkent/small_info.csv", "w+") as file_result_tashkent:
+                tashkent_active_students = 0
+                data = list()
+                for i in range(len(new_students_tashkent)):
+                    response_basic_info = requests.get(BASE_URL.format(f"/participants/{new_students_tashkent[i]}"), headers=HEADERS)
+                    response_logtime = requests.get(BASE_URL.format(f"/participants/{new_students_tashkent[i]}/logtime?date={date_to_use}"), headers=HEADERS)
+                    if response_logtime.status_code == 200 and response_basic_info.status_code == 200:
+                        logtime = float(response_logtime.text)
+
+                        if logtime > 0.0: 
+                            tashkent_active_students += 1
+
+                        response_basic_info_json = json.loads(response_basic_info.text)
+                        level = response_basic_info_json['level']
+                        exp_value = response_basic_info_json['expValue']
+                        data.append(f'{new_students_tashkent[i]},{logtime},{level},{exp_value}\n')
+                        print(f'{new_students_tashkent[i]}, {logtime}, {level}, {exp_value}')
+                        time.sleep(1)
+                data.insert(0,f'student,logtime,level,active students: {tashkent_active_students}\n')
+                file_result_tashkent.writelines(data)         
+
+                
+                    # samarkand_active_students = 0
+                    # for i in range(len(new_students_samarkand)):
+                    #         response = requests.get(BASE_URL.format(f"/participants/{new_students_samarkand[i]}/logtime"), headers=HEADERS)
+                    #         if response.status_code == 200:
+                    #             if response.text > 0.0: 
+                    #                 samarkand_active_students += 1
+                    #             print(f'{new_students_samarkand[i]}: {response.text}')
+                    #             time.sleep(1)
+        except Exception as e:
+            raise Exception(f"There was a problem during parsing from the api {e}")
+
+
+
+
+def main():
+    # if len(sys.argv) > 1:
+    #     if sys.argv[1] not in INTENSIVE:
+    #         raise Exception(f"The entered tasks is not among the intensive tasks")
+        
+    #     task = sys.argv[1]
+
+    #     update_task(task, has_been_parsed=None, being_parsed=1)
+
+    #     get_api_token()
+    #     token = get_file_token()
+    #     parse_student_info(token)
+
+    print()
+    get_api_token()
+    token = get_file_token()
+    parse_student_info(token)
+
+
     
-        project_id, week = INTENSIVE[f'{task}']
+        # project_id, week = INTENSIVE[f'{task}']
 
-        if not os.path.exists('data/campuses/campuses.csv'):
-            get_list_of_campuses_api(token)
-            tashkent_id = get_specific_campus_id("tashkent")
-            samarkand_id = get_specific_campus_id("samarkand")
-        else:
-            tashkent_id = get_specific_campus_id("tashkent")
-            samarkand_id = get_specific_campus_id("samarkand")
+        # if not os.path.exists('data/campuses/campuses.csv'):
+        #     get_list_of_campuses_api(token)
+        #     tashkent_id = get_specific_campus_id("tashkent")
+        #     samarkand_id = get_specific_campus_id("samarkand")
+        # else:
+        #     tashkent_id = get_specific_campus_id("tashkent")
+        #     samarkand_id = get_specific_campus_id("samarkand")
             
 
-        if not os.path.exists('data/coalitions/tashkent/intensiv_coalitions.csv') or not os.path.exists('data/coalitions/samarkand/intensiv_coalitions.csv') :
-            get_coatlitions_api(token, tashkent_id, 'tashkent')
-            get_coatlitions_api(token, samarkand_id, 'samarkand')
+        # if not os.path.exists('data/coalitions/tashkent/intensiv_coalitions.csv') or not os.path.exists('data/coalitions/samarkand/intensiv_coalitions.csv') :
+        #     get_coatlitions_api(token, tashkent_id, 'tashkent')
+        #     get_coatlitions_api(token, samarkand_id, 'samarkand')
 
-        if not os.path.exists('data/participants/tashkent/intensiv_participants.csv') or not os.path.exists('data/participants/samarkand/intensiv_participants.csv'):
-            get_all_intensiv_participants_api(token)
+        # if not os.path.exists('data/participants/tashkent/intensiv_participants.csv') or not os.path.exists('data/participants/samarkand/intensiv_participants.csv'):
+        #     get_all_intensiv_participants_api(token)
 
-        if not os.path.exists(f'data/tasks/tashkent/{week}/{task}/{task}.csv') or not os.path.exists(f'data/tasks/samarkand/{week}/{task}/{task}.csv'):
-                get_specific_project_complеtion_info(token, str(project_id), week, task, 'intensiv_participants.csv')
+        # if not os.path.exists(f'data/tasks/tashkent/{week}/{task}/{task}.csv') or not os.path.exists(f'data/tasks/samarkand/{week}/{task}/{task}.csv'):
+        #         get_specific_project_complеtion_info(token, str(project_id), week, task, 'intensiv_participants.csv')
 
-        if sys.argv[1].startswith('P') or sys.argv[1].startswith('T'):
-            if not os.path.exists(f'data/tasks/tashkent/{week}/{task}/task_report.txt') or not os.path.exists(f'data/tasks/samarkand/{week}/{task}/task_report.txt'):
-                task_report(task, f'data/tasks/tashkent/{week}/{task}/{task}.csv')
-                task_report(task, f'data/tasks/samarkand/{week}/{task}/{task}.csv')
-                update_task(task, has_been_parsed=1, being_parsed=0)
-        else:
-            exam_report(task)
-            update_task(task, has_been_parsed=1, being_parsed=0)
+        # if sys.argv[1].startswith('P') or sys.argv[1].startswith('T'):
+        #     if not os.path.exists(f'data/tasks/tashkent/{week}/{task}/task_report.txt') or not os.path.exists(f'data/tasks/samarkand/{week}/{task}/task_report.txt'):
+        #         task_report(task, f'data/tasks/tashkent/{week}/{task}/{task}.csv')
+        #         task_report(task, f'data/tasks/samarkand/{week}/{task}/{task}.csv')
+        #         update_task(task, has_been_parsed=1, being_parsed=0)
+        # else:
+        #     exam_report(task)
+        #     update_task(task, has_been_parsed=1, being_parsed=0)
+
 
 
 
