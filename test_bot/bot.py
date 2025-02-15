@@ -10,6 +10,7 @@ from config import *
 from api.main import *
 from handle_files import *
 from api_helper import *
+from encrypt import *
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -579,7 +580,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик текстового ввода (логин и пароль)"""
     if 'awaiting' not in context.user_data:
         return  # Игнорируем текстовые сообщения без контекста
-    
+
     try:
         language = get_data(update.effective_chat.id, 'language')
     except KeyError as e:
@@ -602,7 +603,11 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         if user:
             chat_id = update.effective_chat.id
-            update_user(chat_id, edu_username=username, edu_password=password)
+
+            cipher = AESCipher(XXX)
+            encrypted_password = cipher.encrypt(password)
+
+            update_user(chat_id, edu_username=username, edu_password=encrypted_password) 
             await update.message.reply_text(KEYBOARDS['handle_text']['success'][language])
         else:
             await update.message.reply_text(KEYBOARDS['handle_text']['failure'][language])
@@ -620,17 +625,28 @@ async def show_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except KeyError as e:
         raise KeyError(f"An error occured\n{e}")
     
-    go_back_button = KEYBOARDS['button']['stats']['keyboard'][language][-1]['text']
-    go_back_callback = KEYBOARDS['button']['stats']['keyboard'][language][-1]['callback_data']
-
     keyboard = [   
-       [InlineKeyboardButton(go_back_button, callback_data=go_back_callback)]   
+       [InlineKeyboardButton(KEYBOARDS['button']['stats']['keyboard'][language][-1]['text'], callback_data=KEYBOARDS['button']['stats']['keyboard'][language][-1]['callback_data'])]   
     ]
 
     edu_username = get_data(update.effective_chat.id, "edu_username")
 
     if edu_username == None:
         keyboard.insert(0, [InlineKeyboardButton(KEYBOARDS['show_profile']['keyboard'][language], callback_data="authorize_user")])
+
+    # Ник glassole. 
+    
+    # Кампус Ташкент
+
+    # Вы проводите больше времени в кампусе чем 20% участников интесива
+
+    # Вы сдали больше заданий чем 10% участников (вам нужно внимательнее и усерднее выполнять задания) или (вы молодец так держать)
+    
+    # Вы сделали больше ивентов чем 15% участников (вам нужно делать больше ивентов) или ()
+
+    # Вы топ-5 лучший ученик интенсива в Ташкенте и топ-2 среди двух кампусов 
+
+    # Вы ебанутый трудяга! Так держать!
 
     reply_markup = InlineKeyboardMarkup(keyboard)
     await query.edit_message_reply_markup(reply_markup=reply_markup)

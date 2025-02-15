@@ -7,14 +7,14 @@ from config import *
 class AESCipher:
     def __init__(self, key): 
         self.bs = AES.block_size
-        self.key = hashlib.sha256(key.encode()).digest()  # Key must be 16, 24, or 32 bytes
+        self.key = hashlib.sha256(key.encode()).digest()  
 
     def encrypt(self, raw):
-        raw = pad(raw.encode('utf-8'), self.bs)  # Pad the input
-        cipher = AES.new(self.key, AES.MODE_CBC)  # Use CBC mode
-        iv = cipher.iv  # Initialization vector
+        raw = pad(raw.encode('utf-8'), self.bs)  
+        cipher = AES.new(self.key, AES.MODE_CBC) 
+        iv = cipher.iv  
         enc = cipher.encrypt(raw)
-        return base64.b64encode(iv + enc).decode('utf-8')  # Encode and return as string
+        return base64.b64encode(iv + enc).decode('utf-8') 
 
     def decrypt(self, enc):
         try:
@@ -25,15 +25,16 @@ class AESCipher:
             pt = unpad(cipher.decrypt(ct), self.bs)
             return pt.decode('utf-8')
         except (ValueError, KeyError):
-            return None  # Handle potential errors during decryption
+            return None  
 
 
 # Example: 
-cipher = AESCipher(XXX)
+if __name__ == "__main__":
+    cipher = AESCipher(XXX)
 
-password = "Sh7757723!"
-encrypted = cipher.encrypt(password)
-print(f"Encrypted password: {encrypted}")
+    password = "Jaju20042008@"
+    encrypted = cipher.encrypt(password)
+    print(f"Encrypted password: {encrypted}")
 
-decrypted = cipher.decrypt(encrypted)
-print(f"Decrypted password: {decrypted}")
+    decrypted = cipher.decrypt(encrypted)
+    print(f"Decrypted password: {decrypted}")

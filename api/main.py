@@ -525,14 +525,12 @@ def parse_student_info(access_token):
             one_week_ago = today - datetime.timedelta(weeks=1)
             date_to_use = one_week_ago if one_week_ago - datetime.timedelta(weeks=1) > intensive_start_date else intensive_start_date
 
-            tashkent_active_students = 0
-
             incompleted_participants_tashkent = get_incompleted_participants("tashkent")
 
             if not incompleted_participants_tashkent:
                 incompleted_participants_tashkent = tashkent_students_usernames
 
-            db_path_tashkent = "data/participants/samarkand/participants.db"
+            db_path_tashkent = "data/participants/tashkent/participants.db"
             last_parced_student = get_last_parced_student(db_path_tashkent)
             if last_parced_student and last_parced_student in incompleted_participants_tashkent: 
                 index = incompleted_participants_tashkent.index(last_parced_student)
@@ -540,13 +538,12 @@ def parse_student_info(access_token):
 
             for i in range(len(incompleted_participants_tashkent)):  # Iterate through students (usernames)
                 response_basic_info = requests.get(BASE_URL.format(f"/participants/{incompleted_participants_tashkent[i]}"), headers=HEADERS)
+                time.sleep(0.5)
                 response_logtime = requests.get(BASE_URL.format(f"/participants/{incompleted_participants_tashkent[i]}/logtime?date={date_to_use}"), headers=HEADERS)
 
                 if response_logtime.status_code == 200 and response_basic_info.status_code == 200:
                     logtime = float(response_logtime.text)
 
-                    if logtime > 0.0:
-                        tashkent_active_students += 1
 
                     response_basic_info_json = json.loads(response_basic_info.text)
                     level = response_basic_info_json['level']
@@ -579,13 +576,11 @@ def parse_student_info(access_token):
 
             for i in range(len(incompleted_participants_samarkand)):  
                 response_basic_info = requests.get(BASE_URL.format(f"/participants/{incompleted_participants_samarkand[i]}"), headers=HEADERS)
+                time.sleep(0.5)
                 response_logtime = requests.get(BASE_URL.format(f"/participants/{incompleted_participants_samarkand[i]}/logtime?date={date_to_use}"), headers=HEADERS)
 
                 if response_logtime.status_code == 200 and response_basic_info.status_code == 200:
                     logtime = float(response_logtime.text)
-
-                    if logtime > 0.0:
-                        tashkent_active_students += 1
 
                     response_basic_info_json = json.loads(response_basic_info.text)
                     level = response_basic_info_json['level']
@@ -611,28 +606,142 @@ def parse_student_info(access_token):
                 set_last_parced_student("samarkand", last_parced_student, 0)
             
 
-
-
         except Exception as e:
             raise Exception(f"There was a problem during parsing from the api {e}")
         
-def sort_students_data():
-    if os.path.exists("data/participants/tashkent/small_info.csv"):
-        with open("data/participants/tashkent/small_info.csv", 'r') as file:
-            line = file.readline()
-            students = list()
-            while line:
-                line = file.readline()
-                students.append(line.strip())
-            
-            top_student = str()
-            top_student_score = 0
-            for student in students[:len(students) - 1]:
-                if top_student_score <= int(student.split(",")[-1]):
-                    top_student = student
-                    top_student_score = int(student.split(",")[-1])
 
-            print(top_student)
+def parse_personal_stats(access_token):
+    HEADERS = {
+        'Authorization': 'Bearer {}'.format(access_token),
+    }
+
+    if os.path.exists(f"data/participants/tashkent/intensiv_participants.csv") and os.path.exists(f"data/participants/samarkand/intensiv_participants.csv"):
+        students_tashkent = list()
+        with open(f"data/participants/tashkent/intensiv_participants.csv", 'r') as file_tashkent:
+            student = file_tashkent.readline()
+            while student:
+                student = file_tashkent.readline()
+                students_tashkent.append(student.strip())
+
+        new_students_tashkent = students_tashkent[:len(students_tashkent) - 1]
+        tashkent_students_usernames = [student.strip() for student in new_students_tashkent]
+        populate_personal_stats("tashkent", "data/participants/tashkent/personal_stats.db",  tashkent_students_usernames)
+
+        students_samarkand = list()
+        with open(f"data/participants/samarkand/intensiv_participants.csv", 'r') as file_samarkand:
+            student = file_samarkand.readline()
+            while student:
+                student = file_samarkand.readline()
+                students_samarkand.append(student.strip())
+
+        new_students_samarkand = students_samarkand[:len(students_samarkand) - 1]
+        samarkand_students_usernames = [student.strip() for student in new_students_samarkand]
+        populate_personal_stats("samarkand", "data/participants/samarkand/personal_stats.db",  samarkand_students_usernames)
+
+        try:
+            intensive_start_date = datetime.date(2025, 1, 27)
+            today = datetime.date.today()
+            one_week_ago = today - datetime.timedelta(weeks=1)
+            date_to_use = one_week_ago if one_week_ago - datetime.timedelta(weeks=1) > intensive_start_date else intensive_start_date
+
+            active_participants_tashkent = get_active_student_list("data/participants/tashkent/participants.db")
+
+            if not active_participants_tashkent:
+                active_participants_tashkent = tashkent_students_usernames
+
+            db_path_tashkent = "data/participants/tashkent/personal_stats.db"
+            last_parced_student = get_last_parced_student_personal_stats(db_path_tashkent)
+
+            if last_parced_student and last_parced_student in active_participants_tashkent:  
+                index = active_participants_tashkent.index(last_parced_student)
+                active_participants_tashkent = active_participants_tashkent[index:]
+
+            for i in range(len(active_participants_tashkent)): 
+                response_basic_info = requests.get(BASE_URL.format(f"/participants/{active_participants_tashkent[i]}"), headers=HEADERS) 
+                time.sleep(0.5)
+                response_accepted_projects = requests.get(BASE_URL.format(f"/participants/{active_participants_tashkent[i]}/projects?limit=50&offset=0&status=ACCEPTED"), headers=HEADERS)
+                time.sleep(0.5)
+                response_logtime = requests.get(BASE_URL.format(f"/participants/{active_participants_tashkent[i]}/logtime?date={date_to_use}"), headers=HEADERS)
+                time.sleep(0.5)
+                response_badges = requests.get(BASE_URL.format(f"/participants/{active_participants_tashkent[i]}/badges"), headers=HEADERS)
+
+
+                if response_basic_info.status_code == 200 and response_logtime.status_code == 200 and response_accepted_projects.status_code == 200 and response_badges.status_code == 200:
+                    response_basic_info_json = json.loads(response_basic_info.text)
+                    exp_value = response_basic_info_json['expValue']
+
+                    logtime = float(response_logtime.text)
+
+                    response_accepted_projects_json = json.loads(response_accepted_projects.text)
+                    total_num_projects_accepted = len(response_accepted_projects_json["projects"])
+
+                    response_badges_json = json.loads(response_badges.text)
+                    educational_events = len([badge for badge in response_badges_json["badges"] if badge["name"] == "Educational event"])
+                    entertainment_events = len([badge for badge in response_badges_json["badges"] if badge["name"] == "Entertainment event"])
+                    total_num_events = educational_events + entertainment_events
+
+                    update_personal_stats(campus="tashkent", db_path="data/participants/tashkent/personal_stats.db", student=active_participants_tashkent[i], logtime=logtime, exp=exp_value, total_tasks_accepted=total_num_projects_accepted, educational_events=educational_events, entertainment=entertainment_events, total_number_events=total_num_events)
+                    if i > 0:
+                        set_last_parced_student_personal_stats("tashkent", "data/participants/tashkent/personal_stats.db", active_participants_tashkent[i - 1], 0)
+
+                    set_last_parced_student_personal_stats("tashkent", "data/participants/samarkand/personal_stats.db", active_participants_tashkent[i], 1)
+                    print(f"{active_participants_tashkent[i]}, {logtime}, {exp_value}, {total_num_projects_accepted}, {educational_events}, {entertainment_events}, {total_num_events}")
+
+                    time.sleep(1)
+
+
+            active_participants_samarkand = get_active_student_list("data/participants/samarkand/participants.db")
+
+            if not active_participants_samarkand:
+                active_participants_samarkand = samarkand_students_usernames
+
+            db_path_samarkand = "data/participants/samarkand/personal_stats.db"
+            last_parced_student = get_last_parced_student_personal_stats(db_path_samarkand)
+
+            if last_parced_student and last_parced_student in active_participants_samarkand:  
+                index = active_participants_samarkand.index(last_parced_student)
+                active_participants_samarkand = active_participants_samarkand[index:]
+
+            for i in range(len(active_participants_samarkand)): 
+                response_basic_info = requests.get(BASE_URL.format(f"/participants/{active_participants_samarkand[i]}"), headers=HEADERS) 
+                time.sleep(0.5)
+                response_accepted_projects = requests.get(BASE_URL.format(f"/participants/{active_participants_samarkand[i]}/projects?limit=50&offset=0&status=ACCEPTED"), headers=HEADERS)
+                time.sleep(0.5)
+                response_logtime = requests.get(BASE_URL.format(f"/participants/{active_participants_samarkand[i]}/logtime?date={date_to_use}"), headers=HEADERS)
+                time.sleep(0.5)
+                response_badges = requests.get(BASE_URL.format(f"/participants/{active_participants_samarkand[i]}/badges"), headers=HEADERS)
+
+
+                if response_basic_info.status_code == 200 and response_logtime.status_code == 200 and response_accepted_projects.status_code == 200 and response_badges.status_code == 200:
+                    response_basic_info_json = json.loads(response_basic_info.text)
+                    exp_value = response_basic_info_json['expValue']
+
+                    logtime = float(response_logtime.text)
+
+                    response_accepted_projects_json = json.loads(response_accepted_projects.text)
+                    total_num_projects_accepted = len(response_accepted_projects_json["projects"])
+
+                    response_badges_json = json.loads(response_badges.text)
+                    educational_events = len([badge for badge in response_badges_json["badges"] if badge["name"] == "Educational event"])
+                    entertainment_events = len([badge for badge in response_badges_json["badges"] if badge["name"] == "Entertainment event"])
+                    total_num_events = educational_events + entertainment_events
+
+                    update_personal_stats(campus="samarkand", db_path="data/participants/samarkand/personal_stats.db", student=active_participants_samarkand[i], logtime=logtime, exp=exp_value, total_tasks_accepted=total_num_projects_accepted, educational_events=educational_events, entertainment=entertainment_events, total_number_events=total_num_events)
+                    if i > 0:
+                        set_last_parced_student_personal_stats("samarkand", "data/participants/samarkand/personal_stats.db", active_participants_samarkand[i - 1], 0)
+
+                    set_last_parced_student_personal_stats("samarkand", "data/participants/samarkand/personal_stats.db", active_participants_samarkand[i], 1)
+                    print(f"{active_participants_samarkand[i]}, {logtime}, {exp_value}, {total_num_projects_accepted}, {educational_events}, {entertainment_events}, {total_num_events}")
+
+                    time.sleep(1)
+
+            set_all_last_parced("tashkent")
+            set_all_last_parced("samarkand")
+            
+        except Exception as e:
+            raise Exception(f"There was a problem during parsing from the api {e}")
+
+    # def populate_personal_stats(campus, db_path, students):
             
 
 def main():
@@ -667,8 +776,9 @@ def main():
             get_all_intensiv_participants_api(token)
 
 
-        get_specific_project_complеtion_info(token, str(project_id), week, task)
+        # get_specific_project_complеtion_info(token, str(project_id), week, task)
         # parse_student_info(token)
+        parse_personal_stats(token)
         update_task(db_path="./data/tasks.db", task=task, being_parsed=0)
 
 

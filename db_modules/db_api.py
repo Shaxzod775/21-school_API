@@ -334,9 +334,9 @@ def get_active_students(db_path):
         participants_data = cursor.fetchall()
 
         if participants_data:
-            return len(participants_data)  # Return as a dictionary
+            return len(participants_data)  
         else:
-            return None  # Return None if participant not found
+            return None  
 
     except sqlite3.Error as e:
         print(f"Error getting participant: {e}")
@@ -344,6 +344,31 @@ def get_active_students(db_path):
     finally:
         if conn:
             conn.close()
+
+
+
+
+def get_active_student_list(db_path):
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT student FROM participants WHERE logtime > 0")
+        participants_data = cursor.fetchall()
+
+        if participants_data:
+            return [participant[0] for participant in participants_data]
+        else:
+            return None  
+
+    except sqlite3.Error as e:
+        print(f"Error getting participant: {e}")
+        return None
+    finally:
+        if conn:
+            conn.close()
+
+
 
 def get_all_students(db_path):
     try:
@@ -564,8 +589,6 @@ def get_all_students_task_results(db_path):
             conn.close()
 
 
-
-
 def get_student_task_result_by_status(db_path, status):
     try:
         conn = sqlite3.connect(db_path)
@@ -599,36 +622,190 @@ def populate_task_results(db_path, students):  # Changed student_data to student
 
 
 
+def init_table_personal_stats(campus, db_path):
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        cursor.execute(f'''CREATE TABLE IF NOT EXISTS personal_stats (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                            student TEXT UNIQUE NOT NULL,
+                            logtime INTEGER,
+                            exp INTEGER,
+                            total_tasks_accepted INTEGER,
+                            educational_events INTEGER,
+                            entertainment INTEGER,
+                            total_number_events INTEGER,
+                            last_parced INTEGER
+                        )''')
+
+        conn.commit()
+        print(f"Table 'personal_stats' for {campus} created or already exists.")  
+    except sqlite3.Error as e:
+        raise Exception(f"An error occurred while creating the table. Error: {e}")
+    finally:
+        if conn: 
+            conn.close()
+
+
+
+def get_personal_stats(campus, db_path, student):
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT logtime, exp, total_tasks_accepted, educational_events, entertainment, total_number_events, last_parced FROM personal_stats WHERE student = ?", (student,))
+        result = cursor.fetchone()
+        if result:
+            return {
+                "logtime": result[0],
+                "exp": result[1],
+                "total_tasks_accepted": result[2],
+                "educational_events": result[3],
+                "entertainment": result[4],
+                "total_number_events": result[5],
+                "last_parced": result[6]
+            }
+        else:
+            return None
+    except sqlite3.Error as e:
+        print(f"Error getting personal stats: {e}")
+        return None
+    finally:
+        if conn:
+            conn.close()
+
+
+
+def create_personal_stats(campus, db_path, student, logtime=0, exp=0, total_tasks_accepted=0, educational_events=0, entertainment=0, total_number_events=0, last_parced=0):
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO personal_stats (student, logtime, exp, total_tasks_accepted, educational_events, entertainment, total_number_events, last_parced) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (student, logtime, exp, total_tasks_accepted, educational_events, entertainment, total_number_events, last_parced))
+        conn.commit()
+        print(f"Student {student} has been added to the database in campus {campus}")
+        return True
+    except sqlite3.Error as e:
+        print(f"Error creating personal stats for campus {campus}: {e}")
+        conn.rollback()
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+
+
+def update_personal_stats(campus, db_path, student, logtime=None, exp=None, total_tasks_accepted=None, educational_events=None, entertainment=None, total_number_events=None, last_parced=None):
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        updates = []
+        values = []
+
+        if logtime is not None:
+            updates.append("logtime = ?")
+            values.append(logtime)
+        if exp is not None:
+            updates.append("exp = ?")
+            values.append(exp)
+        if total_tasks_accepted is not None:
+            updates.append("total_tasks_accepted = ?")
+            values.append(total_tasks_accepted)
+        if educational_events is not None:
+            updates.append("educational_events = ?")
+            values.append(educational_events)
+        if entertainment is not None:
+            updates.append("entertainment = ?")
+            values.append(entertainment)
+        if total_number_events is not None:
+            updates.append("total_number_events = ?")
+            values.append(total_number_events)
+        if last_parced is not None:
+            updates.append("last_parced = ?")
+            values.append(last_parced)
+
+        if updates:
+            sql = f"UPDATE personal_stats SET {', '.join(updates)} WHERE student = ?"
+            values.append(student)
+            cursor.execute(sql, tuple(values))
+            conn.commit()
+            return cursor.rowcount > 0
+        else:
+            return False
+
+    except sqlite3.Error as e:
+        print(f"Error updating personal stats for campus {campus}: {e}")
+        conn.rollback()
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+
+
+def populate_personal_stats(campus, db_path, students):
+    for student in students:
+        if not get_personal_stats(campus, db_path, student):
+            create_personal_stats(campus, db_path, student)
+        else:
+            print(f"Student {student} already exists. Skipping")
+
+
+
+def get_last_parced_student_personal_stats(db_path):
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        sql = f"SELECT student FROM personal_stats WHERE last_parced = 1"  # Corrected table name
+        cursor.execute(sql)
+        student = cursor.fetchone()
+
+        if student:
+            return student[0]  # Return the student name (string), not a tuple
+        else:
+            return None # Return None if no student is found
+
+    except sqlite3.Error as e:
+        print(f"Error getting last parced student: {e}")
+        return None
+    finally:
+        if conn:
+            conn.close()
+
+def set_all_last_parced(campus):
+    try:
+        conn = sqlite3.connect(f"data/participants/{campus}/personal_stats.db")
+        cursor = conn.cursor()
+
+        cursor.execute("UPDATE personal_stats SET last_parced = 0 WHERE last_parced = 1")
+        conn.commit()
+        
+    except sqlite3.Error as e:
+        print(f"Error updating personal stats for campus {campus}: {e}")
+        conn.rollback()
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+
+def set_last_parced_student_personal_stats(campus, db_path, student, last_parced):
+    try:
+        return update_personal_stats(campus=campus, db_path=db_path, student=student, last_parced=last_parced) # Directly return the result of update_personal_stats
+    except sqlite3.Error as e:
+        print(f"Error setting last parced student: {e}")
+        return False
+
+
+
+
 if __name__ == "__main__":
-    init_table_participants("tashkent", "data/participants/tashkent/participants.db")
-    init_table_participants("samarkand", "data/participants/samarkand/participants.db")
+    init_table_personal_stats("tashkent", "data/participants/tashkent/personal_stats.db")
+    init_table_personal_stats("samarkand", "data/participants/samarkand/personal_stats.db")
 
-#     # Example usage:
-#     campus = "tashkent"  # Or "samarkand"
-    # init_table_participants("tashkent") #Create table if it doesnt exist
-    # init_table_participants("samarkand") #Create table if it doesnt exist
-#     students_list = ["user1", "user2", "user3", "user4"]
-#     populate_participants(campus, students_list)
+    get_active_student_list("data/participants/samarkand/participants.db")
 
-#     #Get participant data
-#     participant_data = get_participant(campus, "user1")
-#     if participant_data:
-#         print(f"Data for user1: {participant_data}")
-#     else:
-#         print("User1 not found")
+    # init_table_participants("tashkent", "data/participants/tashkent/participants.db")
+    # init_table_participants("samarkand", "data/participants/samarkand/participants.db")
 
-#     #Update participant data
-#     update_participant(campus, "user1", level=5, exp=100)
-#     participant_data = get_participant(campus, "user1")
-#     if participant_data:
-#         print(f"Data for user1 after update: {participant_data}")
-# else:
-#     print("User1 not found")
-
-
-    # drop_table("tasks")
-    # init_table_tasks()
-    # populate_tasks()
-    # task = "E01D05"
-    # has_been_parsed, being_parsed, start_date, end_date = get_task(task, "./data/tasks.db")
-    # print(f"The task is {task} it is start date is {start_date}, it is end date is {end_date}")

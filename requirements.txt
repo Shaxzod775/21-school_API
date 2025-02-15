@@ -5,6 +5,7 @@ h11==0.14.0
 httpcore==1.0.7
 httpx==0.28.1
 idna==3.10
+pycryptodome==3.21.0
 pyTelegramBotAPI==4.26.0
 python-telegram-bot==21.10
 pytz==2025.1
