@@ -8,6 +8,7 @@ from config import *
 from telegram.helpers import escape_markdown
 from posts import *
 from db import *
+from db_modules.db_api import *
 
 def read_main_csv(filepath):
     with open(filepath, "r+") as file:
@@ -28,22 +29,44 @@ def make_report(task, language, campus_arg):
 
     _return['campus'] = campus_arg
 
-    filepath = f'../api/data/tasks/{campus_arg}/{week}/{task}/{task}.csv'
+    _, being_parsed, start_date, _ = get_task(task, "../api/data/tasks.db")
+
+    current_datetime = datetime.datetime.now()
+
+    if start_date:
+        start_datetime_converted = datetime.datetime.strptime(start_date, "%Y-%m-%d %H:%M:%S")
+        
+        if start_datetime_converted > current_datetime:
+            return {'report': {  
+                "english": "The start time for the task has not come yet",
+                "russian": "Время старта задание ещё не пришло",
+                "uzbek": "Topshiriq boshlanish vaqti hali kelmadi"
+            }[language], "report_ready": False}
+    
+        if bool(being_parsed):
+            return {'report': {  
+                "english": "The report is being made",
+                "russian": "Отчет готовится",
+                "uzbek": "Hisobot tayyorlanyapti"
+            }[language], "report_ready": False}
+            
+
+    filepath = f'../api/data/tasks/{campus_arg}/{week}/{task}/{task}.db'
     if not os.path.exists(filepath):
         return {'report': {  
             "english": "Report is not yet ready",
             "russian": "Отчет еще не готов",
             "uzbek": "Hisobot hali tayyor emas"
-        }[language]}
+        }[language], "report_ready": False}
     
     passed_students, _, scored_didnt_pass, scored_hundred_percent, num_of_students, acceptance_rate, in_progress, in_reviews, registered = sort_task_data(filepath)
 
-    _return['passed_students'] = [[student.split(',')[0], student.split(',')[-1]] for student in passed_students]
-    _return['scored_hundred'] = [[student.split(',')[0], student.split(',')[-1]] for student in scored_hundred_percent]
-    _return['scored_didnt_pass'] = [[student.split(',')[0], student.split(',')[-1]] for student in scored_didnt_pass]
-    _return['in_progress'] = [[student.split(',')[0], student.split(',')[-1]] for student in in_progress]
-    _return['in_reviews'] = [[student.split(',')[0], student.split(',')[-1]] for student in in_reviews]
-    _return['registered'] = [[student.split(',')[0], student.split(',')[-1]] for student in registered]
+    _return['passed_students'] = [[student['student'], student['final_score']] for student in passed_students]
+    _return['scored_hundred'] = [[student['student'], student['final_score']] for student in scored_hundred_percent]
+    _return['scored_didnt_pass'] = [[student['student'], student['final_score']] for student in scored_didnt_pass]
+    _return['in_progress'] = [[student['student'], student['final_score']] for student in in_progress]
+    _return['in_reviews'] = [[student['student'], student['final_score']] for student in in_reviews]
+    _return['registered'] = [[student['student'], student['final_score']] for student in registered]
 
     if language == "russian": 
             campus_language_specified = "Ташкент" if campus_arg == "tashkent" else "Самарканд"

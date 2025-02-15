@@ -2,13 +2,12 @@
 import os
 import sys
 
-sys.path.append("./")
+sys.path.append("..")
 
 import requests
 import json
 import time
-import datetime
-import pytz
+from db_modules.db_api import *
 from config_api import *
 
 
@@ -211,63 +210,97 @@ def get_info_participant_project_percent(access_token, username, projectId):
 
     return _return
 
-def get_specific_project_complеtion_info(access_token, project_id, week, project_name, filename):
+def get_specific_project_complеtion_info(access_token, project_id, week, project_name):
         HEADERS = {
         'Authorization': 'Bearer {}'.format(access_token),
         }
 
-        if os.path.exists(f"data/participants/tashkent/{filename}") and os.path.exists(f"data/participants/samarkand/{filename}"):
-            students_tahkent = list()
-            with open(f"data/participants/tashkent/{filename}", 'r') as file_tashkent:
-                student = file_tashkent.readline()
-                while student:
-                    student = file_tashkent.readline()
-                    students_tahkent.append(student.strip())
+        if os.path.exists(f"data/participants/tashkent/participants.db") and os.path.exists(f"data/participants/samarkand/participants.db"):
+            db_path_tashkent = f"data/tasks/tashkent/{week}/{project_name}/{project_name}.db"
+            students_tashkent = get_all_students("data/participants/tashkent/participants.db")
 
-            new_students_tashkent = students_tahkent[:len(students_tahkent) - 1]
+            if not os.path.exists(db_path_tashkent):
+                init_table_for_task(db_path_tashkent)
+            populate_task_results(db_path_tashkent, students_tashkent)
             
-            students_samarkand = list()
-            with open(f"data/participants/samarkand/{filename}", 'r') as file_samarkand:
-                student = file_samarkand.readline()
-                while student:
-                    student = file_samarkand.readline()
-                    students_samarkand.append(student.strip())
 
-            new_students_samarkand = students_samarkand[:len(students_samarkand) - 1]
+            db_path_samarkand = f"data/tasks/samarkand/{week}/{project_name}/{project_name}.db"
+            students_samarkand = get_all_students("data/participants/samarkand/participants.db")
 
-            if not os.path.exists(f"data/tasks/tashkent/{week}/{project_name}/{project_name}.csv"):
-                with open(f'data/tasks/tashkent/{week}/{project_name}/{project_name}.csv', "w+") as file_result_tashkent:
-                    file_result_tashkent.write('student,title,type,status,final score\n')
-                    for i in range(len(new_students_tashkent)):
-                            response = requests.get(BASE_URL.format(f"/participants/{new_students_tashkent[i]}/projects/{project_id}"), headers=HEADERS)
-                            if response.status_code == 200:
-                                response_json = json.loads(response.text)
-                                title = response_json['title']
-                                type = response_json['type']
-                                status = response_json['status']
-                                final_percentage = response_json['finalPercentage']
-                                file_result_tashkent.write(f'{new_students_tashkent[i]},{title},{type},{status},{final_percentage}\n')
-                                print(f'{new_students_tashkent[i]},{title},{type},{status},{final_percentage}')
-                                time.sleep(1)
-                            else:
-                                raise Exception(f"There was a problem during parsing scores from the api!\n{response.status_code}\n{response.text}")
+            if not os.path.exists(db_path_samarkand):
+                init_table_for_task(db_path_samarkand)
+            populate_task_results(db_path_samarkand, students_samarkand)
+
             
-            if not os.path.exists(f"data/tasks/samarkand/{week}/{project_name}/{project_name}.csv"):
-                with open(f'data/tasks/samarkand/{week}/{project_name}/{project_name}.csv', "w+") as file_result_samarkand:
-                    file_result_samarkand.write('student,title,type,status,final score\n')
-                    for i in range(len(new_students_samarkand)):
-                            response = requests.get(BASE_URL.format(f"/participants/{new_students_samarkand[i]}/projects/{project_id}"), headers=HEADERS)
-                            if response.status_code == 200:
-                                response_json = json.loads(response.text)
-                                title = response_json['title']
-                                type = response_json['type']
-                                status = response_json['status']
-                                final_percentage = response_json['finalPercentage']
-                                file_result_samarkand.write(f'{new_students_samarkand[i]},{title},{type},{status},{final_percentage}\n')
-                                print(f'{new_students_samarkand[i]},{title},{type},{status},{final_percentage}')
-                                time.sleep(1)
-                            else:
-                                raise Exception(f"There was a problem during parsing scores from the api!\n{response.status_code}\n{response.text}") 
+            incompleted_students_tashkent = list()
+            null = get_student_task_result_by_status(db_path_tashkent, "NULL")
+            registered = get_student_task_result_by_status(db_path_tashkent, "REGISTERED")
+            in_progress = get_student_task_result_by_status(db_path_tashkent, "IN_PROGRESS")
+            in_reviews = get_student_task_result_by_status(db_path_tashkent, "IN_REVIEWS")
+
+            if null:
+                for student in null:
+                    incompleted_students_tashkent.append(student)
+            elif registered:
+                for student in registered:
+                    incompleted_students_tashkent.append(student)
+            elif in_progress:
+                for student in in_progress:
+                    incompleted_students_tashkent.append(student)
+            elif in_reviews:
+                for student in in_reviews:
+                    incompleted_students_tashkent.append(student)
+
+            if incompleted_students_tashkent:
+                for i in range(len(incompleted_students_tashkent)):
+                        response = requests.get(BASE_URL.format(f"/participants/{incompleted_students_tashkent[i]}/projects/{project_id}"), headers=HEADERS)
+                        if response.status_code == 200:
+                            response_json = json.loads(response.text)
+                            title = response_json['title']
+                            type = response_json['type']
+                            status = response_json['status']
+                            final_percentage = response_json['finalPercentage']
+                            task_updated = update_task_result(db_path=db_path_tashkent, student=incompleted_students_tashkent[i], title=title, type=type, status=status, final_score=final_percentage)
+                            if task_updated:
+                                print(f'{incompleted_students_tashkent[i]},{title},{type},{status},{final_percentage}')
+                            time.sleep(1)
+                        else:
+                            raise Exception(f"There was a problem during parsing scores from the api!\n{response.status_code}\n{response.text}\nStudent username: {incompleted_students_tashkent[i]}")
+            
+
+            incompleted_students_samarkand = list()
+            null = get_student_task_result_by_status(db_path_samarkand, "NULL")
+            registered = get_student_task_result_by_status(db_path_samarkand, "REGISTERED")
+            in_progress = get_student_task_result_by_status(db_path_samarkand, "IN_PROGRESS")
+            in_reviews = get_student_task_result_by_status(db_path_samarkand, "IN_REVIEWS")
+
+            if null:
+                for student in null:
+                    incompleted_students_samarkand.append(student)
+            elif registered:
+                for student in registered:
+                    incompleted_students_samarkand.append(student)
+            elif in_progress:
+                for student in in_progress:
+                    incompleted_students_samarkand.append(student)
+            elif in_reviews:
+                for student in in_reviews:
+                    incompleted_students_samarkand.append(student)
+            
+            if incompleted_students_samarkand:
+                for i in range(len(incompleted_students_samarkand)):
+                        response = requests.get(BASE_URL.format(f"/participants/{incompleted_students_samarkand[i]}/projects/{project_id}"), headers=HEADERS)
+                        if response.status_code == 200:
+                            response_json = json.loads(response.text)
+                            title = response_json['title']
+                            type = response_json['type']
+                            status = response_json['status']
+                            final_percentage = response_json['finalPercentage']
+                            update_task_result(db_path_samarkand, incompleted_students_samarkand[i], title, type, status, final_percentage)
+                            print(f'{incompleted_students_samarkand[i]},{title},{type},{status},{final_percentage}')
+                            time.sleep(1)
+                        else:
+                            raise Exception(f"There was a problem during parsing scores from the api!\n{response.status_code}\n{response.text}") 
 
 
 def sort_task_data(filename):
@@ -275,43 +308,33 @@ def sort_task_data(filename):
         if not os.path.exists(filename) :
             raise Exception(f'There is no task file in this folder! {filename}')
         
-        students = list()
-        
-        with open(filename, 'r') as file:
-            line = file.readline()
-            while line:
-                line = file.readline()
-                students.append(line.strip())
+        students = get_all_students_task_results(filename)
 
-        new_students = students[:len(students) - 1]
-
-        registered = [new_students[i] for i in range(len(new_students)) if new_students[i].split(',')[3] == 'REGISTERED']
-        passed_students = [new_students[i] for i in range(len(new_students)) if new_students[i].split(',')[3] == 'ACCEPTED']
-        failed_students = [new_students[i] for i in range(len(new_students)) if new_students[i].split(',')[3] == 'FAILED']
-        in_progress = [new_students[i] for i in range(len(new_students)) if new_students[i].split(',')[3] == 'IN_PROGRESS']
-        in_reviews = [new_students[i] for i in range(len(new_students)) if new_students[i].split(',')[3] == 'IN_REVIEWS']
+        registered = [students[i] for i in range(len(students)) if students[i]['status'] == 'REGISTERED']
+        passed_students = [students[i] for i in range(len(students)) if students[i]['status'] == 'ACCEPTED']
+        failed_students = [students[i] for i in range(len(students)) if students[i]['status'] == 'FAILED']
+        in_progress = [students[i] for i in range(len(students)) if students[i]['status'] == 'IN_PROGRESS']
+        in_reviews = [students[i] for i in range(len(students)) if students[i]['status'] == 'IN_REVIEWS']
 
         scored_didnt_pass = list()
 
-        for i in range(len(new_students)):
-            score = new_students[i].split(',')[-1]
-            status = new_students[i].split(',')[3]
-            if score != '0' and score != 'None':
+        for student in students:
+            score = student['final_score']
+            status = student['status']
+            if score != '0' and score != None:
                 if int(score) < 50 and status != 'ACCEPTED':
-                    scored_didnt_pass.append(new_students[i])
+                    scored_didnt_pass.append(student)
 
+        scored_didnt_pass_result = sorted(scored_didnt_pass, key=lambda item: int(item['final_score']), reverse=True)
 
-        scored_didnt_pass_result = sorted(scored_didnt_pass, key=lambda item: int(item.split(',')[-1]), reverse=True)
+        scored_hundred_percent = [student for student in passed_students if int(student['final_score']) >= 100]
 
-        scored_hundred_percent = [student for student in passed_students if int(student.split(',')[-1]) >= 100]
+        acceptance_rate = (len(passed_students) / len(students)) * 100
 
-        acceptance_rate = (len(passed_students) / len(new_students)) * 100
-
-        return passed_students, failed_students, scored_didnt_pass_result, scored_hundred_percent, len(new_students), acceptance_rate, in_progress, in_reviews, registered
+        return passed_students, failed_students, scored_didnt_pass_result, scored_hundred_percent, len(students), acceptance_rate, in_progress, in_reviews, registered
     except Exception:
         raise Exception
 
-# def report_during_exam():
 
 def task_report(task, filepath):
         _, week = INTENSIVE[task]
@@ -466,73 +489,151 @@ def sort_exam_data_before(task):
     except Exception:
         raise Exception
 
-    
-def exam_report(task):
-        _, week = INTENSIVE[task]
-        passed_students_tashkent, _, scored_didnt_pass_tashkent, scored_hundred_percent_tashkent, num_of_students_tashkent, acceptance_rate_tashkent, _, _, _ = sort_task_data(f"data/tasks/tashkent/{week}/{task}/{task}.csv")
-        passed_students_samarkand, _, scored_didnt_pass_samarkand, scored_hundred_percent_samarkand, num_of_students_samarkand, acceptance_rate_samarkand, _, _, _ = sort_task_data(f"data/tasks/samarkand/{week}/{task}/{task}.csv")
 
-        passed_students_usernames_tashkent = [student.split(',')[0] for student in passed_students_tashkent]
-        scored_hundred_percent_usernames_tashkent = [student.split(',')[0] for student in scored_hundred_percent_tashkent]
-        scored_didnt_pass_usernames_tashkent = [student.split(',')[0] for student in scored_didnt_pass_tashkent]
+def parse_student_info(access_token):
+    HEADERS = {
+        'Authorization': 'Bearer {}'.format(access_token),
+    }
 
-        passed_students_usernames_samarkand = [student.split(',')[0] for student in passed_students_samarkand]
-        scored_hundred_percent_usernames_samarkand = [student.split(',')[0] for student in scored_hundred_percent_samarkand]
-        scored_didnt_pass_usernames_samarkand = [student.split(',')[0] for student in scored_didnt_pass_samarkand]    
+    if os.path.exists(f"data/participants/tashkent/intensiv_participants.csv") and os.path.exists(f"data/participants/samarkand/intensiv_participants.csv"):
+        students_tashkent = list()
+        with open(f"data/participants/tashkent/intensiv_participants.csv", 'r') as file_tashkent:
+            student = file_tashkent.readline()
+            while student:
+                student = file_tashkent.readline()
+                students_tashkent.append(student.strip())
 
-        with open(f"data/tasks/tashkent/{week}/{task}/task_report.txt", "w+") as file_tashkent:
-            file_tashkent.write(f"Репорт:\n\n")
-            if len(passed_students_tashkent) != 0:
-                file_tashkent.write(f"Из {num_of_students_tashkent} учеников только {len(passed_students_tashkent)} смогли сдать этот проэкт!\n\n")
-            if len(scored_didnt_pass_tashkent) != 0:
-                file_tashkent.write(f"{len(scored_didnt_pass_tashkent)} сделали хотя бы одно задание, но не смогли сдать проэкт\n\n")
-            if len(passed_students_tashkent) != 0:
-                file_tashkent.write("Поздравления всем сдавшим ребятам!\n\n")
+        new_students_tashkent = students_tashkent[:len(students_tashkent) - 1]
+        tashkent_students_usernames = [student.strip() for student in new_students_tashkent]
+        populate_participants("tashkent", tashkent_students_usernames)
 
+        students_samarkand = list()
+        with open(f"data/participants/samarkand/intensiv_participants.csv", 'r') as file_samarkand:
+            student = file_samarkand.readline()
+            while student:
+                student = file_samarkand.readline()
+                students_samarkand.append(student.strip())
 
-        with open(f"data/tasks/samarkand/{week}/{task}/task_report.txt", "w+") as file_samarkand:
-            file_samarkand.write(f"Репорт:\n\n")
-            if len(passed_students_samarkand) != 0:
-                file_samarkand.write(f"Из {num_of_students_samarkand} учеников только {len(passed_students_samarkand)} смогли сдать этот проэкт!\n\n")
-            if len(scored_didnt_pass_samarkand) != 0:
-                file_samarkand.write(f"{len(scored_didnt_pass_samarkand)} сделали хотя бы одно задание, но не смогли сдать проэкт\n\n")
-            if len(passed_students_samarkand) != 0:
-                file_samarkand.write("Поздравления всем сдавшим ребятам!\n\n")
+        new_students_samarkand = students_samarkand[:len(students_samarkand) - 1]
+        samarkand_students_usernames = [student.strip() for student in new_students_samarkand]
+        populate_participants("samarkand", samarkand_students_usernames)
 
 
+        try:
+            intensive_start_date = datetime.date(2025, 1, 27)
+            today = datetime.date.today()
+            one_week_ago = today - datetime.timedelta(weeks=1)
+            date_to_use = one_week_ago if one_week_ago - datetime.timedelta(weeks=1) > intensive_start_date else intensive_start_date
 
-        with open(f"data/tasks/tashkent/{week}/{task}/details/passed_students.csv", "w+") as file1_tashkent:
-            file1_tashkent.write(f"USERNAMES,TOTAL NUMBER: {len(passed_students_tashkent)},ACCEPTANCE RATE: {acceptance_rate_tashkent:.2f}%\n")
-            for student in passed_students_usernames_tashkent:
-                file1_tashkent.write(f"{student}\n")
+            tashkent_active_students = 0
 
-        with open(f"data/tasks/samarkand/{week}/{task}/details/passed_students.csv", "w+") as file1_samarkand:
-            file1_samarkand.write(f"USERNAMES,TOTAL NUMBER: {len(passed_students_tashkent)},ACCEPTANCE RATE: {acceptance_rate_tashkent:.2f}%\n")
-            for student in passed_students_usernames_tashkent:
-                file1_samarkand.write(f"{student}\n")
+            incompleted_participants_tashkent = get_incompleted_participants("tashkent")
+
+            if not incompleted_participants_tashkent:
+                incompleted_participants_tashkent = tashkent_students_usernames
+
+            db_path_tashkent = "data/participants/samarkand/participants.db"
+            last_parced_student = get_last_parced_student(db_path_tashkent)
+            if last_parced_student and last_parced_student in incompleted_participants_tashkent: 
+                index = incompleted_participants_tashkent.index(last_parced_student)
+                incompleted_participants_tashkent = incompleted_participants_tashkent[index:]
+
+            for i in range(len(incompleted_participants_tashkent)):  # Iterate through students (usernames)
+                response_basic_info = requests.get(BASE_URL.format(f"/participants/{incompleted_participants_tashkent[i]}"), headers=HEADERS)
+                response_logtime = requests.get(BASE_URL.format(f"/participants/{incompleted_participants_tashkent[i]}/logtime?date={date_to_use}"), headers=HEADERS)
+
+                if response_logtime.status_code == 200 and response_basic_info.status_code == 200:
+                    logtime = float(response_logtime.text)
+
+                    if logtime > 0.0:
+                        tashkent_active_students += 1
+
+                    response_basic_info_json = json.loads(response_basic_info.text)
+                    level = response_basic_info_json['level']
+                    exp_value = response_basic_info_json['expValue']
+                    exp_to_next_level = response_basic_info_json['expToNextLevel']
 
 
-        with open(f"data/tasks/tashkent/{week}/{task}/details/scored_hundred.csv", "w+") as file1_tashkent:
-            file1_tashkent.write(f"USERNAMES,TOTAL NUMBER: {len(scored_hundred_percent_tashkent)}\n")
-            for student in scored_hundred_percent_usernames_tashkent:
-                file1_tashkent.write(f"{student}\n")
+                    # Update the database
+                    update_participant("tashkent", incompleted_participants_tashkent[i], logtime=logtime, level=level, exp=exp_value, exp_to_next_level=exp_to_next_level)
+                    if i > 0:
+                        set_last_parced_student("tashkent", incompleted_participants_tashkent[i - 1], 0)
+                    
+                    set_last_parced_student("tashkent", incompleted_participants_tashkent[i], 1)
+                    print(f'{incompleted_participants_tashkent[i]}, {logtime}, {level}, {exp_value}, {exp_to_next_level}')
 
-        with open(f"data/tasks/samarkand/{week}/{task}/details/scored_hundred.csv", "w+") as file1_samarkand:
-            file1_samarkand.write(f"USERNAMES,TOTAL NUMBER: {len(scored_hundred_percent_tashkent)}\n")
-            for student in scored_hundred_percent_usernames_tashkent:
-                file1_samarkand.write(f"{student}\n")
+                    time.sleep(1)
+
+            incompleted_participants_samarkand = get_incompleted_participants("samarkand")
+
+            if not incompleted_participants_samarkand:
+                incompleted_participants_samarkand = samarkand_students_usernames
 
 
-        with open(f"data/tasks/tashkent/{week}/{task}/details/scored_didnt_pass.csv", "w+") as file1_tashkent:
-            file1_tashkent.write(f"USERNAMES,TOTAL NUMBER: {len(scored_didnt_pass_tashkent)}\n")
-            for student in scored_didnt_pass_usernames_tashkent:
-                file1_tashkent.write(f"{student}\n")
+            db_path_samarkand = "data/participants/samarkand/participants.db"
+            last_parced_student = get_last_parced_student(db_path_samarkand)
 
-        with open(f"data/tasks/samarkand/{week}/{task}/details/scored_didnt_pass.csv", "w+") as file1_samarkand:
-            file1_samarkand.write(f"USERNAMES,TOTAL NUMBER: {len(scored_didnt_pass_tashkent)}\n")
-            for student in scored_didnt_pass_usernames_tashkent:
-                file1_samarkand.write(f"{student}\n")
+            if last_parced_student and last_parced_student in incompleted_participants_samarkand:  
+                index = incompleted_participants_samarkand.index(last_parced_student)
+                incompleted_participants_samarkand = incompleted_participants_samarkand[index:]
 
+            for i in range(len(incompleted_participants_samarkand)):  
+                response_basic_info = requests.get(BASE_URL.format(f"/participants/{incompleted_participants_samarkand[i]}"), headers=HEADERS)
+                response_logtime = requests.get(BASE_URL.format(f"/participants/{incompleted_participants_samarkand[i]}/logtime?date={date_to_use}"), headers=HEADERS)
+
+                if response_logtime.status_code == 200 and response_basic_info.status_code == 200:
+                    logtime = float(response_logtime.text)
+
+                    if logtime > 0.0:
+                        tashkent_active_students += 1
+
+                    response_basic_info_json = json.loads(response_basic_info.text)
+                    level = response_basic_info_json['level']
+                    exp_value = response_basic_info_json['expValue']
+                    exp_to_next_level = response_basic_info_json['expToNextLevel']
+
+                    # Update the database
+                    update_participant("samarkand", incompleted_participants_samarkand[i], logtime=logtime, level=level, exp=exp_value, exp_to_next_level=exp_to_next_level)
+                    if i > 0:
+                        set_last_parced_student("samarkand", incompleted_participants_samarkand[i - 1], 0)
+
+                    set_last_parced_student("samarkand", incompleted_participants_samarkand[i], 1)
+                    print(f'{incompleted_participants_samarkand[i]}, {logtime}, {level}, {exp_value}, {exp_to_next_level}')
+
+                    time.sleep(1)
+            
+            last_parced_student = get_last_parced_student(db_path_tashkent)
+            if last_parced_student == incompleted_participants_tashkent[-1]:
+                set_last_parced_student("tashkent", last_parced_student, 0)
+            
+            last_parced_student = get_last_parced_student(db_path_samarkand)
+            if last_parced_student == incompleted_participants_samarkand[-1]:
+                set_last_parced_student("samarkand", last_parced_student, 0)
+            
+
+
+
+        except Exception as e:
+            raise Exception(f"There was a problem during parsing from the api {e}")
+        
+def sort_students_data():
+    if os.path.exists("data/participants/tashkent/small_info.csv"):
+        with open("data/participants/tashkent/small_info.csv", 'r') as file:
+            line = file.readline()
+            students = list()
+            while line:
+                line = file.readline()
+                students.append(line.strip())
+            
+            top_student = str()
+            top_student_score = 0
+            for student in students[:len(students) - 1]:
+                if top_student_score <= int(student.split(",")[-1]):
+                    top_student = student
+                    top_student_score = int(student.split(",")[-1])
+
+            print(top_student)
+            
 
 def main():
     if len(sys.argv) > 1:
@@ -540,6 +641,9 @@ def main():
             raise Exception(f"The entered tasks is not among the intensive tasks")
 
         task = sys.argv[1]
+
+
+        update_task(db_path="./data/tasks.db", task=task, being_parsed=1)
 
         get_api_token()
         token = get_file_token()
@@ -562,29 +666,19 @@ def main():
         if not os.path.exists('data/participants/tashkent/intensiv_participants.csv') or not os.path.exists('data/participants/samarkand/intensiv_participants.csv'):
             get_all_intensiv_participants_api(token)
 
-        if not os.path.exists(f'data/tasks/tashkent/{week}/{task}/{task}.csv') or not os.path.exists(f'data/tasks/samarkand/{week}/{task}/{task}.csv'):
-                get_specific_project_complеtion_info(token, str(project_id), week, task, 'intensiv_participants.csv')
+
+        get_specific_project_complеtion_info(token, str(project_id), week, task)
+        # parse_student_info(token)
+        update_task(db_path="./data/tasks.db", task=task, being_parsed=0)
+
 
         if sys.argv[1].startswith('P') or sys.argv[1].startswith('T'):
             if not os.path.exists(f'data/tasks/tashkent/{week}/{task}/task_report.txt') or not os.path.exists(f'data/tasks/samarkand/{week}/{task}/task_report.txt'):
                 task_report(task, f'data/tasks/tashkent/{week}/{task}/{task}.csv')
                 task_report(task, f'data/tasks/samarkand/{week}/{task}/{task}.csv')
         else:
-            # if not os.path.exists(f"data/tasks/tashkent/{week}/{task}/details/registered.csv") or not os.path.exists(f"data/tasks/samarkand/{week}/{task}/details/registered.csv"):
-            #     sort_exam_data_before(f"data/tasks/tashkent/{week}/{task}/{task}.csv")
-            #     sort_exam_data_before(f"data/tasks/samarkand/{week}/{task}/{task}.csv")
-            # elif os.path.exists(f"data/tasks/tashkent/{week}/{task}/") and os.path.exists(f"data/tasks/samarkand/{week}/{task}/") :
-            #     # Get current time in Tashkent
-            #     tashkent_timezone = pytz.timezone("Asia/Tashkent")  # Or appropriate IANA timezone name
-            #     now = datetime.datetime.now(tashkent_timezone)
-
-            #     # Check if it's Friday and after 6:30 PM
-            #     if now.weekday() == 4 and now.hour >= 18 and now.minute >= 30:  # Friday is 4 (Monday is 0)
-            #         if not os.path.exists(f"data/tasks/tashkent/{week}/{task}/{task}.csv") or os.path.exists(f"data/tasks/samarkand/{week}/{task}/{task}.csv"):
-            #             get_specific_project_complеtion_info(token, str(project_id), week, task, 'intensiv_participants.csv')
-
-            #         exam_report(task, f"data/tasks/tashkent/{week}/{task}/{task}.csv")
-            exam_report(task)
+            # exam_report(task)
+            update_task(db_path="./data/tasks.db", task=task, being_parsed=0)
 
 
 

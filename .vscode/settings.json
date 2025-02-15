@@ -1,5 +1,9 @@
 {
     "python.analysis.extraPaths": [
+        "./test_bot",
+        "./api/data",
+        "./api/data",
+        "./api/data",
         "./test_bot"
     ]
 }

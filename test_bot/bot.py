@@ -3,12 +3,13 @@ sys.path.append("..")
 
 import telegram.constants
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputFile, InputMediaPhoto
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, CallbackContext
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, CallbackContext, MessageHandler, filters
 from posts import create_telegraph_post, make_content
-from db import *  
+from db_modules import *  
 from config import *
 from api.main import *
 from handle_files import *
+from api_helper import *
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -106,8 +107,9 @@ async def stream_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     stream = query.data
     context.user_data['stream'] = stream
+    username = update.effective_user.username
 
-    create_user(context.user_data['chatId'], context.user_data['language'], context.user_data['campus'], stream)
+    create_user(context.user_data['chatId'], username, context.user_data['language'], context.user_data['campus'], stream)
 
     await show_main_options(update, context)
 
@@ -121,16 +123,36 @@ async def show_main_options(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     try:
         language = get_data(chat_id, 'language')
         campus = get_data(chat_id, "campus")
-
-        context.user_data['campus'] = campus
     except KeyError as e:
         raise KeyError(f"Wrong language has been entered {e}")
 
-    caption = KEYBOARDS['show_main_options']['caption'][language[0]]
+    student, level, exp = get_best_student(f"../api/data/participants/{campus}/participants.db")
 
+    num_active_students = get_active_students(f"../api/data/participants/{campus}/participants.db")
+  
+    num_students = 699 if campus == "tashkent" else 347
+
+    if language == "russian":
+        campus_language_specified = "Ташкент" if campus == "tashkent" else "Самарканд"
+    else:
+        campus_language_specified = campus.capitalize()
+
+    student_link = f"https://edu.21-school.ru/profile/{student}/about"
+    # Format the student part of the caption with Markdown link
+    formatted_student = f"[{student}]({student_link})" #MarkdownV2 format
+
+
+    caption = KEYBOARDS['show_main_options']['caption'][language].format(
+        campus=campus_language_specified,
+        num_active_students=num_active_students,
+        num_students=num_students,
+        student=formatted_student, 
+        level=level,
+        exp=exp
+    )
     keyboard = list()
 
-    for item in KEYBOARDS['show_main_options']['keyboard'][language[0]]:
+    for item in KEYBOARDS['show_main_options']['keyboard'][language]:
         keyboard.append([InlineKeyboardButton(item['text'], callback_data=item['callback_data'])])
 
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -186,7 +208,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if query.data == 'stats':
         keyboard = list()
 
-        for item in KEYBOARDS['button']['stats']['keyboard'][language[0]]:
+        for item in KEYBOARDS['button']['stats']['keyboard'][language]:
             keyboard.append([InlineKeyboardButton(item['text'], callback_data=item['callback_data'])])
 
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -203,39 +225,6 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     else:
         await query.edit_message_media(media=query.message.media, caption=query.message.caption, reply_markup=InlineKeyboardMarkup(keyboard)) 
 
-    # elif query.data == 'change_language':
-    #     # Show language options
-    #     keyboard = [
-    #         [InlineKeyboardButton("Русский", callback_data='lang_ru')],
-    #         [InlineKeyboardButton("O'zbekcha", callback_data='lang_uz')],
-    #         [InlineKeyboardButton("English", callback_data='lang_en')]
-    #     ]
-    #     reply_markup = InlineKeyboardMarkup(keyboard)
-    #     await query.edit_message_text(text="Выберите язык:", reply_markup=reply_markup)
-
-    # elif query.data == 'change_campus':
-    #     # Ask if the user wants to change the campus
-    #     keyboard = [
-    #         [InlineKeyboardButton("Да", callback_data='campus')],
-    #         [InlineKeyboardButton("Нет", callback_data='main_options')]
-    #     ]
-    #     reply_markup = InlineKeyboardMarkup(keyboard)
-    #     await query.edit_message_text(text="Хотите выбрать другой кампус?", reply_markup=reply_markup)
-
-    # elif query.data == 'change_stream':
-    #     # Show the current stream and options to change it
-    #     current_stream = context.user_data.get('stream', 'не выбран')
-    #     keyboard = [
-    #         [InlineKeyboardButton("Интенсис", callback_data='stream_intensiv')],
-    #         [InlineKeyboardButton("Основа", callback_data='stream_osnova')]
-    #     ]
-    #     reply_markup = InlineKeyboardMarkup(keyboard)
-    #     await query.edit_message_text(text=f"Ваш текущий поток: {current_stream.capitalize()}. Хотите изменить?", reply_markup=reply_markup)
-
-    # elif query.data == "go_back":
-    #     await query.delete_message()
-    #     await context.bot.send_message( chat_id=update.effective_chat.id, text="Выберите опцию:", reply_markup=reply_markup)
-    #     await query.edit_message_text(await show_main_options(update, context))
 
 async def change_language(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
@@ -251,7 +240,7 @@ async def change_language(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         [InlineKeyboardButton("Русский", callback_data='changed_lang_russian')],
         [InlineKeyboardButton("O'zbek", callback_data='changed_lang_uzbek')],
     ]
-    keyboard_language.append([KEYBOARDS['button']['stats']['keyboard'][language[0]][-1]])
+    keyboard_language.append([KEYBOARDS['button']['stats']['keyboard'][language][-1]])
 
     reply_markup_language = InlineKeyboardMarkup(keyboard_language)
 
@@ -279,7 +268,7 @@ async def show_tasks(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     await query.answer()
 
     try:
-        language = get_data(update.effective_chat.id, 'language')[0]
+        language = get_data(update.effective_chat.id, 'language')
     except KeyError as e:
         raise KeyError(f"An error occured\n{e}")
     
@@ -287,28 +276,40 @@ async def show_tasks(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
     if query.data == "stats_intensive_week_1":
             keyboard = [
-                [InlineKeyboardButton(task, callback_data=task)] for task, _ in FIRST_WEEK_INTENSIVE.items()   
+                [InlineKeyboardButton(
+                    task, 
+                    callback_data=task if task.startswith("T") else task.split(" ")[0]
+                )] for task, _ in FIRST_WEEK_INTENSIVE.items()
             ]
             keyboard.append([InlineKeyboardButton(go_back, callback_data='go_back')])
             reply_markup = InlineKeyboardMarkup(keyboard)
             await query.edit_message_reply_markup(reply_markup=reply_markup)
     elif query.data == "stats_intensive_week_2":
             keyboard = [
-                [InlineKeyboardButton(task, callback_data=task)] for task, _ in SECOND_WEEK_INTENSIVE.items()   
+                [InlineKeyboardButton(
+                    task, 
+                    callback_data=task if task.startswith("T") else task.split(" ")[0]
+                )] for task, _ in SECOND_WEEK_INTENSIVE.items()
             ]
             keyboard.append([InlineKeyboardButton(go_back, callback_data='go_back')])
             reply_markup = InlineKeyboardMarkup(keyboard)
             await query.edit_message_reply_markup(reply_markup=reply_markup)
     elif query.data == "stats_intensive_week_3":
             keyboard = [
-                [InlineKeyboardButton(task, callback_data=task)] for task, _ in THIRD_WEEK_INTENSIVE.items()   
+                [InlineKeyboardButton(
+                    task, 
+                    callback_data=task if task.startswith("T") else task.split(" ")[0]
+                )] for task, _ in THIRD_WEEK_INTENSIVE.items()
             ]
             keyboard.append([InlineKeyboardButton(go_back, callback_data='go_back')])
             reply_markup = InlineKeyboardMarkup(keyboard)
             await query.edit_message_reply_markup(reply_markup=reply_markup)
     elif query.data == "stats_intensive_week_4":
             keyboard = [
-                [InlineKeyboardButton(task, callback_data=task)] for task, _ in FOURTH_WEEK_INTENSIVE.items()   
+                [InlineKeyboardButton(
+                    task, 
+                    callback_data=task if task.startswith("T") else task.split(" ")[0]
+                )] for task, _ in FOURTH_WEEK_INTENSIVE.items()
             ]
             keyboard.append([InlineKeyboardButton("Go back", callback_data='go_back')])
             reply_markup = InlineKeyboardMarkup(keyboard)
@@ -339,17 +340,18 @@ async def show_specific_task_info(update: Update, context: ContextTypes.DEFAULT_
     for report_type in ['passed', 'hundred', 'scored_didnt_pass', 'in_progress', 'in_reviews', 'registered']:
         students = report.get(f'scored_{report_type}' if report_type != 'passed' else 'passed_students')
         if students:
-            await _process_report_type(task, students, report_type, language, task_id, result, context.user_data['campus'][0])
+            await _process_report_type(task, students, report_type, language, task_id, result, campus)
 
 
     text_show_other_campus = KEYBOARDS['show_specific_task_info']['other_campus_stats_button'][language]['text']
     callback_data = "show_other_campus_task_info" 
 
-    reply_markup = InlineKeyboardMarkup([
-        [InlineKeyboardButton(text_show_other_campus, callback_data=callback_data)],
-        [InlineKeyboardButton(KEYBOARDS['button']['stats']['keyboard'][language][-1]['text'], callback_data='go_back')]
-        ])
+    buttons = [[InlineKeyboardButton(KEYBOARDS['button']['stats']['keyboard'][language][-1]['text'], callback_data='go_back')]]
 
+    if "report_ready" not in report:
+        buttons.insert(0, [InlineKeyboardButton(text_show_other_campus, callback_data=callback_data)])
+
+    reply_markup = InlineKeyboardMarkup(buttons)
     await query.edit_message_caption("".join(result))
     await query.edit_message_reply_markup(reply_markup=reply_markup)
 
@@ -413,12 +415,12 @@ async def show_other_campus_task_info(update: Update, context: ContextTypes.DEFA
 
 async def _get_user_language_and_campus(update: Update, context: ContextTypes.DEFAULT_TYPE) -> tuple:
     try:
-        language = get_data(update.effective_chat.id, 'language')[0]
+        language = get_data(update.effective_chat.id, 'language')
     except KeyError as e:
         raise KeyError(f"An error occurred\n{e}")
 
     try:
-        campus = get_data(update.effective_chat.id, 'campus')[0]
+        campus = get_data(update.effective_chat.id, 'campus')
     except KeyError as e:
         raise KeyError(f"An error occurred\n{e}")
     return language, campus
@@ -507,10 +509,10 @@ async def change_campus(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     await query.answer()
 
 
-    campus = get_data(update.effective_chat.id, "campus")[0].capitalize()
+    campus = get_data(update.effective_chat.id, "campus")
 
     try:
-        language = get_data(update.effective_chat.id, 'language')[0]
+        language = get_data(update.effective_chat.id, 'language')
     except KeyError as e:
         raise KeyError(f"An error occured\n{e}")
     
@@ -527,7 +529,12 @@ async def change_campus(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     reply_markup = InlineKeyboardMarkup(keyboard)
     caption = KEYBOARDS['change_campus']['caption'][language]
 
-    await query.edit_message_caption(caption=f"{caption} {campus}")
+    if language == "russian":
+        campus_language_specified = "Ташкент" if campus == "tashkent" else "Самарканд"
+    else:
+        campus_language_specified = campus.capitalize()
+
+    await query.edit_message_caption(caption=f"{caption} {campus_language_specified}")
     await query.edit_message_reply_markup(reply_markup=reply_markup)
 
 async def campus_changed(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -547,6 +554,86 @@ async def campus_changed(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 
 
+
+async def authorize_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик нажатия кнопки авторизации"""
+    query = update.callback_query
+    await query.answer()
+
+    try:
+        language = get_data(update.effective_chat.id, 'language')
+    except KeyError as e:
+        raise KeyError(f"An error occurred\n{e}")
+
+    if query.data == "authorize_user":
+        context.user_data.clear()  # Очистка предыдущих данных
+        context.user_data['auth_chat_id'] = update.effective_chat.id
+
+        await query.edit_message_caption(caption=KEYBOARDS['authorize_user']['caption'][language])
+        await query.message.reply_text(KEYBOARDS['handle_text']['enter_login'][language])
+        context.user_data['awaiting'] = "username"
+
+
+
+async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик текстового ввода (логин и пароль)"""
+    if 'awaiting' not in context.user_data:
+        return  # Игнорируем текстовые сообщения без контекста
+    
+    try:
+        language = get_data(update.effective_chat.id, 'language')
+    except KeyError as e:
+        raise KeyError(f"An error occurred\n{e}")
+
+    text = update.message.text
+
+    if context.user_data['awaiting'] == "username":
+        context.user_data['edu_username'] = text
+        context.user_data['awaiting'] = "password"
+        await update.message.reply_text(KEYBOARDS['handle_text']['login_saved'][language])
+
+    elif context.user_data['awaiting'] == "password":
+        context.user_data['edu_password'] = text
+        username = context.user_data['edu_username']
+        password = context.user_data['edu_password']
+        context.user_data.pop('awaiting', None)  # Очистить статус
+
+        user = await api_authorization(username, password)
+
+        if user:
+            chat_id = update.effective_chat.id
+            update_user(chat_id, edu_username=username, edu_password=password)
+            await update.message.reply_text(KEYBOARDS['handle_text']['success'][language])
+        else:
+            await update.message.reply_text(KEYBOARDS['handle_text']['failure'][language])
+        
+        await show_main_options(update, context)
+
+
+
+async def show_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    try:
+        language = get_data(update.effective_chat.id, 'language')
+    except KeyError as e:
+        raise KeyError(f"An error occured\n{e}")
+    
+    go_back_button = KEYBOARDS['button']['stats']['keyboard'][language][-1]['text']
+    go_back_callback = KEYBOARDS['button']['stats']['keyboard'][language][-1]['callback_data']
+
+    keyboard = [   
+       [InlineKeyboardButton(go_back_button, callback_data=go_back_callback)]   
+    ]
+
+    edu_username = get_data(update.effective_chat.id, "edu_username")
+
+    if edu_username == None:
+        keyboard.insert(0, [InlineKeyboardButton(KEYBOARDS['show_profile']['keyboard'][language], callback_data="authorize_user")])
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await query.edit_message_reply_markup(reply_markup=reply_markup)
 
 
 def main():
@@ -571,6 +658,9 @@ def main():
     app.add_handler(CallbackQueryHandler(show_specific_task_info, pattern=r"^T\d{2}D\d{2}$|^E\d{2}D\d{2}$|^P\d{2}D\d{2}$"))
     app.add_handler(CallbackQueryHandler(show_other_campus_task_info, pattern=r"^show_other_campus_task_info"))
 
+    app.add_handler(CallbackQueryHandler(show_profile, pattern=r"^profile"))
+    app.add_handler(CallbackQueryHandler(authorize_user, pattern="^authorize_user$"))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 
 
     app.run_polling()
