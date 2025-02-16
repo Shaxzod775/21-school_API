@@ -336,125 +336,6 @@ def sort_task_data(filename):
         raise Exception
 
 
-def task_report(task, filepath):
-        _, week = INTENSIVE[task]
-        passed_students, _, scored_didnt_pass, scored_hundred_percent, num_of_students, acceptance_rate, in_progress, in_reviews, registered = sort_task_data(filepath)
-
-        passed_students_usernames = [student.split(',')[0] for student in passed_students]
-        scored_hundred_percent_usernames = [student.split(',')[0] for student in scored_hundred_percent]
-        scored_didnt_pass_usernames = [student.split(',')[0] for student in scored_didnt_pass] 
-        in_progress_usernames = [student.split(',')[0] for student in in_progress] 
-        in_reviews_usernames = [student.split(',')[0] for student in in_reviews] 
-        registered_usernames = [student.split(',')[0] for student in registered] 
-
-        with open(f"data/tasks/tashkent/{week}/{task}/task_report.txt", "w+") as file_tashkent:
-            file_tashkent.write(f"Репорт:\n\n")
-            if len(in_progress) != 0:
-                file_tashkent.write(f"{len(in_reviews)} записались на проэкт\n")
-            if len(in_progress) != 0:
-                file_tashkent.write(f"{len(in_reviews)} сейчас делают проэкт\n")
-            if len(in_reviews) != 0:
-                file_tashkent.write(f"{len(in_reviews)} завершили проэкт и сейчас проходят проверку\n")
-            if len(passed_students) != 0:
-                file_tashkent.write(f"Из {num_of_students} учеников только {len(passed_students)} смогли сдать этот проэкт!\n\n")
-            if len(scored_didnt_pass) != 0:
-                file_tashkent.write(f"{len(scored_didnt_pass)} сделали хотя бы одно задание, но не смогли сдать проэкт\n\n")
-            if len(passed_students) != 0:
-                file_tashkent.write("Поздравления всем сдавшим ребятам!\n\n")
-
-
-        with open(f"data/tasks/samarkand/{week}/{task}/task_report.txt", "w+") as file_samarkand:
-            file_samarkand.write(f"Репорт:\n\n")
-            if len(in_progress) != 0:
-                file_samarkand.write(f"{len(in_reviews)} записались на проэкт\n")
-            if len(in_progress) != 0:
-                file_samarkand.write(f"{len(in_reviews)} сейчас делают проэкт\n")
-            if len(in_reviews) != 0:
-                file_samarkand.write(f"{len(in_reviews)} завершили проэкт и сейчас проходят проверку\n")
-            if len(passed_students) != 0:
-                file_samarkand.write(f"Из {num_of_students} учеников только {len(passed_students)} смогли сдать этот проэкт!\n\n")
-            if len(scored_didnt_pass) != 0:
-                file_samarkand.write(f"{len(scored_didnt_pass)} сделали хотя бы одно задание, но не смогли сдать проэкт\n\n")
-            if len(passed_students) != 0:
-                file_samarkand.write("Поздравления всем сдавшим ребятам!\n\n")
-
-        if len(passed_students) != 0:
-            with open(f"data/tasks/tashkent/{week}/{task}/details/passed_students.csv", "w+") as file1_tashkent:
-                file1_tashkent.write(f"USERNAMES,TOTAL NUMBER: {len(passed_students)},ACCEPTANCE RATE: {acceptance_rate:.2f}%\n")
-                for student in passed_students_usernames:
-                    file1_tashkent.write(f"{student}\n")
-
-            with open(f"data/tasks/samarkand/{week}/{task}/details/passed_students.csv", "w+") as file1_samarkand:
-                file1_samarkand.write(f"USERNAMES,TOTAL NUMBER: {len(passed_students)},ACCEPTANCE RATE: {acceptance_rate:.2f}%\n")
-                for student in passed_students_usernames:
-                    file1_samarkand.write(f"{student}\n")
-
-
-
-        if len(scored_hundred_percent) != 0:
-            with open(f"data/tasks/tashkent/{week}/{task}/details/scored_hundred.csv", "w+") as file1_tashkent:
-                file1_tashkent.write(f"USERNAMES,TOTAL NUMBER: {len(scored_hundred_percent)}\n")
-                for student in scored_hundred_percent_usernames:
-                    file1_tashkent.write(f"{student}\n")
-
-            with open(f"data/tasks/samarkand/{week}/{task}/details/scored_hundred.csv", "w+") as file1_samarkand:
-                file1_samarkand.write(f"USERNAMES,TOTAL NUMBER: {len(scored_hundred_percent)}\n")
-                for student in scored_hundred_percent_usernames:
-                    file1_samarkand.write(f"{student}\n")
-
-
-
-        if len(scored_didnt_pass) != 0:
-            with open(f"data/tasks/tashkent/{week}/{task}/details/scored_didnt_pass.csv", "w+") as file1_tashkent:
-                file1_tashkent.write(f"USERNAMES,TOTAL NUMBER: {len(scored_didnt_pass)}\n")
-                for student in scored_didnt_pass_usernames:
-                    file1_tashkent.write(f"{student}\n")
-
-            with open(f"data/tasks/samarkand/{week}/{task}/details/scored_didnt_pass.csv", "w+") as file1_samarkand:
-                file1_samarkand.write(f"USERNAMES,TOTAL NUMBER: {len(scored_didnt_pass)}\n")
-                for student in scored_didnt_pass_usernames:
-                    file1_samarkand.write(f"{student}\n")
-
-
-        if len(in_progress) != 0:
-            with open(f"data/tasks/tashkent/{week}/{task}/details/in_progress.csv", "w+") as file1_tashkent:
-                file1_tashkent.write(f"USERNAMES,TOTAL NUMBER: {len(in_progress_usernames)}\n")
-                for student in in_progress_usernames:
-                    file1_tashkent.write(f"{student}\n")
-
-            with open(f"data/tasks/samarkand/{week}/{task}/details/in_progress.csv", "w+") as file1_samarkand:
-                file1_samarkand.write(f"USERNAMES,TOTAL NUMBER: {len(in_progress_usernames)}\n")
-                for student in in_progress_usernames:
-                    file1_samarkand.write(f"{student}\n")
-
-
-
-        if len(in_reviews) != 0:
-            with open(f"data/tasks/tashkent/{week}/{task}/details/in_reviews.csv", "w+") as file1_tashkent:
-                file1_tashkent.write(f"USERNAMES,TOTAL NUMBER: {len(in_reviews_usernames)}\n")
-                for student in in_reviews_usernames:
-                    file1_tashkent.write(f"{student}\n")
-
-            with open(f"data/tasks/samarkand/{week}/{task}/details/in_reviews.csv", "w+") as file1_samarkand:
-                file1_samarkand.write(f"USERNAMES,TOTAL NUMBER: {len(in_reviews_usernames)}\n")
-                for student in in_reviews_usernames:
-                    file1_samarkand.write(f"{student}\n")
-
-
-
-        if len(registered) != 0:
-            with open(f"data/tasks/tashkent/{week}/{task}/details/registered.csv", "w+") as file1_tashkent:
-                file1_tashkent.write(f"USERNAMES,,TOTAL NUMBER: {len(registered_usernames)}\n")
-                for student in registered_usernames:
-                    file1_tashkent.write(f"{student}\n")
-
-
-            with open(f"data/tasks/samarkand/{week}/{task}/details/registered.csv", "w+") as file1_samarkand:
-                file1_samarkand.write(f"USERNAMES,,TOTAL NUMBER: {len(registered_usernames)}\n")
-                for student in registered_usernames:
-                    file1_samarkand.write(f"{student}\n")
-
-
 
 def sort_exam_data_before(task):
     try:
@@ -741,8 +622,69 @@ def parse_personal_stats(access_token):
         except Exception as e:
             raise Exception(f"There was a problem during parsing from the api {e}")
 
-    # def populate_personal_stats(campus, db_path, students):
-            
+
+def sort_personal_stats(db_path, target_student):
+    students = get_all_active_students_personal_stats(db_path)
+
+    if not students:
+        print("No students found in the database.")
+        return None
+
+    # Sort by different criteria
+    sorted_students_logtime = sorted(students, key=lambda x: x[1], reverse=True)
+    sorted_students_tasks = sorted(students, key=lambda x: x[3], reverse=True)
+    sorted_students_edu_events = sorted(students, key=lambda x: x[4], reverse=True)
+    sorted_students_ent_events = sorted(students, key=lambda x: x[5], reverse=True)
+    sorted_students_total_events = sorted(students, key=lambda x: x[6], reverse=True)
+
+    results = {}  # Store all the results
+
+    # Process each sorted list
+    for sorted_list, key_name in [
+        (sorted_students_logtime, "logtime"),
+        (sorted_students_tasks, "tasks"),
+        (sorted_students_edu_events, "edu_events"),
+        (sorted_students_ent_events, "ent_events"),
+        (sorted_students_total_events, "total_events"),
+    ]:
+        try:
+            student_index = next(i for i, (name, *rest) in enumerate(sorted_list) if name == target_student)
+            student_rank = student_index + 1
+
+        except StopIteration:
+            print(f"Ученик {target_student} не найден в списке.")
+            return None
+
+        # Calculate percentages
+        target_value = None  # Generic name for the value we're comparing
+        for name, value, *_ in sorted_list:  # Find target value in the current sorted list
+            if name == target_student:
+                target_value = value
+                break
+
+        if target_value is None:
+            print(f"Ученик {target_student} не найден в списке.")
+            return None
+
+        less_than = sum(1 for _, value, *_ in sorted_list if value > target_value)  # Correct comparison
+        more_than = sum(1 for _, value, *_ in sorted_list if value < target_value)  # Correct comparison
+
+        percent_less = (less_than / len(sorted_list)) * 100
+        percent_more = (more_than / len(sorted_list)) * 100
+
+        results[key_name] = {  # Store results for each key
+            "rank": student_rank,
+            "percent_more": percent_more,
+            "percent_less": percent_less,
+            "total_students": len(sorted_list),
+        }
+        print(f"По {key_name}:")
+        print(f"Ученик {target_student} находится на {student_rank} из {len(sorted_list)}")
+        print(f"{target_student} проводит больше времени/делает больше, чем {percent_more:.2f}% учеников.")
+        print(f"{target_student} проводит меньше времени/делает меньше, чем {percent_less:.2f}% учеников.")
+
+    return results
+
 
 def main():
     if len(sys.argv) > 1:
@@ -776,19 +718,12 @@ def main():
             get_all_intensiv_participants_api(token)
 
 
-        # get_specific_project_complеtion_info(token, str(project_id), week, task)
+        get_specific_project_complеtion_info(token, str(project_id), week, task)
         # parse_student_info(token)
-        parse_personal_stats(token)
+        # parse_personal_stats(token)
+        # sort_personal_stats("data/participants/tashkent/personal_stats.db", "oureadag")
         update_task(db_path="./data/tasks.db", task=task, being_parsed=0)
 
-
-        if sys.argv[1].startswith('P') or sys.argv[1].startswith('T'):
-            if not os.path.exists(f'data/tasks/tashkent/{week}/{task}/task_report.txt') or not os.path.exists(f'data/tasks/samarkand/{week}/{task}/task_report.txt'):
-                task_report(task, f'data/tasks/tashkent/{week}/{task}/{task}.csv')
-                task_report(task, f'data/tasks/samarkand/{week}/{task}/{task}.csv')
-        else:
-            # exam_report(task)
-            update_task(db_path="./data/tasks.db", task=task, being_parsed=0)
 
 
 
