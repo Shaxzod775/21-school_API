@@ -218,9 +218,9 @@ def create_participant(campus, student, logtime=0, level=0, exp=0, exp_to_next_l
             conn.close()
 
 
-def update_participant(campus, student, logtime=None, level=None, exp=None, exp_to_next_level=None, last_parced=0):
+def update_participant(db_path, student, logtime=None, level=None, exp=None, exp_to_next_level=None, last_parced=0):
     try:
-        conn = sqlite3.connect(f"data/participants/{campus}/participants.db")
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
         updates = []
@@ -266,6 +266,27 @@ def get_participant(campus, student):
         cursor = conn.cursor()
 
         cursor.execute("SELECT logtime, level, exp, exp_to_next_level FROM participants WHERE student = ?", (student,))
+        participant_data = cursor.fetchone()
+
+        if participant_data:
+            logtime, level, exp, exp_to_next_level = participant_data
+            return {"logtime": logtime, "level": level, "exp": exp, "exp_to_next_level": exp_to_next_level}  # Return as a dictionary
+        else:
+            return None  # Return None if participant not found
+
+    except sqlite3.Error as e:
+        print(f"Error getting participant: {e}")
+        return None
+    finally:
+        if conn:
+            conn.close()
+
+def get_all_participants(campus):
+    try:
+        conn = sqlite3.connect(f"data/participants/{campus}/participants.db")
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT * FROM participants")
         participant_data = cursor.fetchone()
 
         if participant_data:
@@ -400,9 +421,9 @@ def populate_participants(campus, students):
             print(f"Student {student} already exists. Skipping.")
 
 
-def set_last_parced_student(campus, student, last_parced):
+def set_last_parced_student(db_path, student, last_parced):
     try:
-        result = update_participant(campus=campus, student=student, logtime=None, level=None, exp=None, exp_to_next_level=None, last_parced=last_parced)
+        result = update_participant(db_path=db_path, student=student, logtime=None, level=None, exp=None, exp_to_next_level=None, last_parced=last_parced)
         if result:
             return True
     except sqlite3.Error as e:
@@ -419,7 +440,7 @@ def get_last_parced_student(db_path):
         student = cursor.fetchone()
         
         if student:
-            return student
+            return student[0]
 
     except sqlite3.Error as e:
         conn.rollback()
@@ -796,15 +817,115 @@ def set_last_parced_student_personal_stats(campus, db_path, student, last_parced
     except sqlite3.Error as e:
         print(f"Error setting last parced student: {e}")
         return False
+    
 
+
+def get_all_active_students_personal_stats(db_path):
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        cursor.execute(f"SELECT student, logtime, exp, total_tasks_accepted, educational_events, entertainment, total_number_events FROM personal_stats WHERE logtime > 0")
+        students = cursor.fetchall()
+
+        if students:
+            return students  
+        else:
+            return None 
+
+    except sqlite3.Error as e:
+        print(f"Error getting active students: {e}")
+        return None
+    finally:
+        if conn:
+            conn.close()
+
+
+
+def set_being_updated(db_path, campus, being_updated):
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+       # Check if there are any updates to perform
+        cursor.execute(f"UPDATE overall SET being_updated = ? WHERE campus = ?", (being_updated, campus))
+        conn.commit()
+        if cursor.rowcount > 0:
+            return True #Return True if any row was updated
+        else:
+            print("There is no such campus")
+            return False
+    except sqlite3.Error as e:
+        conn.rollback()
+        print(f"Error updating overall campus: {e}")
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+def check_being_updated(db_path, campus):
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT being_updated FROM overall WHERE campus = ?", (campus,))
+        result = cursor.fetchone()
+        if result:
+            return result[0]
+        else:
+            return None
+    except sqlite3.Error as e:
+        print(f"Error getting overall state of the campus {campus}: {e}")
+        return None
+    finally:
+        if conn:
+            conn.close()
+
+
+def get_all_participants_for_overall(db_path):
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT student, logtime, level, exp, exp_to_next_level FROM participants")
+        participant_data = cursor.fetchall()
+
+        if participant_data:
+            return participant_data
+        else:
+            return None  # Return None if participant not found
+
+    except sqlite3.Error as e:
+        print(f"Error getting participant: {e}")
+        return None
+    finally:
+        if conn:
+            conn.close()
+
+
+def get_all_personal_stats_for_overall(db_path):
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT student, logtime, exp, total_tasks_accepted, educational_events, entertainment, total_number_events FROM personal_stats")
+        result = cursor.fetchall()
+        if result:
+            return result
+        else:
+            return None
+    except sqlite3.Error as e:
+        print(f"Error getting personal stats: {e}")
+        return None
+    finally:
+        if conn:
+            conn.close()
 
 
 
 if __name__ == "__main__":
-    init_table_personal_stats("tashkent", "data/participants/tashkent/personal_stats.db")
-    init_table_personal_stats("samarkand", "data/participants/samarkand/personal_stats.db")
+    # init_table_personal_stats("tashkent", "data/participants/tashkent/personal_stats.db")
+    # init_table_personal_stats("samarkand", "data/participants/samarkand/personal_stats.db")
 
-    get_active_student_list("data/participants/samarkand/participants.db")
+    print(get_all_personal_stats_for_overall("data/participants/samarkand/personal_stats.db"))
 
     # init_table_participants("tashkent", "data/participants/tashkent/participants.db")
     # init_table_participants("samarkand", "data/participants/samarkand/participants.db")

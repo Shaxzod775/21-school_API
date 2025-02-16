@@ -619,38 +619,38 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def show_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-
-    try:
-        language = get_data(update.effective_chat.id, 'language')
-    except KeyError as e:
-        raise KeyError(f"An error occured\n{e}")
     
+    language, campus = await _get_user_language_and_campus(update, context)
+
     keyboard = [   
        [InlineKeyboardButton(KEYBOARDS['button']['stats']['keyboard'][language][-1]['text'], callback_data=KEYBOARDS['button']['stats']['keyboard'][language][-1]['callback_data'])]   
     ]
 
     edu_username = get_data(update.effective_chat.id, "edu_username")
 
-    if edu_username == None:
+    if edu_username is None:
         keyboard.insert(0, [InlineKeyboardButton(KEYBOARDS['show_profile']['keyboard'][language], callback_data="authorize_user")])
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_reply_markup(reply_markup=reply_markup)
+    else:
+        report = make_profile_report(language, campus, f"../api/data/participants_to_read/{campus}/personal_stats.db", edu_username)
 
-    # Ник glassole. 
-    
-    # Кампус Ташкент
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_caption(caption=report, reply_markup=reply_markup)
+        
+        # Ник glassole. 
+        
+        # Кампус Ташкент
 
-    # Вы проводите больше времени в кампусе чем 20% участников интесива
+        # Вы проводите больше времени в кампусе чем 20% участников интесива
 
-    # Вы сдали больше заданий чем 10% участников (вам нужно внимательнее и усерднее выполнять задания) или (вы молодец так держать)
-    
-    # Вы сделали больше ивентов чем 15% участников (вам нужно делать больше ивентов) или ()
+        # Вы сдали больше заданий чем 10% участников (вам нужно внимательнее и усерднее выполнять задания) или (вы молодец так держать)
+        
+        # Вы сделали больше ивентов чем 15% участников (вам нужно делать больше ивентов) или ()
 
-    # Вы топ-5 лучший ученик интенсива в Ташкенте и топ-2 среди двух кампусов 
+        # Вы топ-5 лучший ученик интенсива в Ташкенте и топ-2 среди двух кампусов 
 
-    # Вы ебанутый трудяга! Так держать!
-
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_reply_markup(reply_markup=reply_markup)
-
+        # Вы ебанутый трудяга! Так держать!
 
 def main():
     app = Application.builder().token(TOKEN).build()

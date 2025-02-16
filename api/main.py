@@ -7,7 +7,7 @@ sys.path.append("..")
 import requests
 import json
 import time
-from db_modules.db_api import *
+from db_modules.db_api import * 
 from config_api import *
 
 
@@ -413,6 +413,7 @@ def parse_student_info(access_token):
 
             db_path_tashkent = "data/participants/tashkent/participants.db"
             last_parced_student = get_last_parced_student(db_path_tashkent)
+            print(last_parced_student)
             if last_parced_student and last_parced_student in incompleted_participants_tashkent: 
                 index = incompleted_participants_tashkent.index(last_parced_student)
                 incompleted_participants_tashkent = incompleted_participants_tashkent[index:]
@@ -431,13 +432,13 @@ def parse_student_info(access_token):
                     exp_value = response_basic_info_json['expValue']
                     exp_to_next_level = response_basic_info_json['expToNextLevel']
 
-
+                    db_path_tashkent
                     # Update the database
-                    update_participant("tashkent", incompleted_participants_tashkent[i], logtime=logtime, level=level, exp=exp_value, exp_to_next_level=exp_to_next_level)
+                    update_participant(db_path_tashkent, incompleted_participants_tashkent[i], logtime=logtime, level=level, exp=exp_value, exp_to_next_level=exp_to_next_level)
                     if i > 0:
-                        set_last_parced_student("tashkent", incompleted_participants_tashkent[i - 1], 0)
+                        set_last_parced_student(db_path_tashkent, incompleted_participants_tashkent[i - 1], 0)
                     
-                    set_last_parced_student("tashkent", incompleted_participants_tashkent[i], 1)
+                    set_last_parced_student(db_path_tashkent, incompleted_participants_tashkent[i], 1)
                     print(f'{incompleted_participants_tashkent[i]}, {logtime}, {level}, {exp_value}, {exp_to_next_level}')
 
                     time.sleep(1)
@@ -469,22 +470,22 @@ def parse_student_info(access_token):
                     exp_to_next_level = response_basic_info_json['expToNextLevel']
 
                     # Update the database
-                    update_participant("samarkand", incompleted_participants_samarkand[i], logtime=logtime, level=level, exp=exp_value, exp_to_next_level=exp_to_next_level)
+                    update_participant(db_path_samarkand, incompleted_participants_samarkand[i], logtime=logtime, level=level, exp=exp_value, exp_to_next_level=exp_to_next_level)
                     if i > 0:
-                        set_last_parced_student("samarkand", incompleted_participants_samarkand[i - 1], 0)
+                        set_last_parced_student(db_path_samarkand, incompleted_participants_samarkand[i - 1], 0)
 
-                    set_last_parced_student("samarkand", incompleted_participants_samarkand[i], 1)
+                    set_last_parced_student(db_path_samarkand, incompleted_participants_samarkand[i], 1)
                     print(f'{incompleted_participants_samarkand[i]}, {logtime}, {level}, {exp_value}, {exp_to_next_level}')
 
                     time.sleep(1)
             
             last_parced_student = get_last_parced_student(db_path_tashkent)
             if last_parced_student == incompleted_participants_tashkent[-1]:
-                set_last_parced_student("tashkent", last_parced_student, 0)
+                set_last_parced_student(db_path_tashkent, last_parced_student, 0)
             
             last_parced_student = get_last_parced_student(db_path_samarkand)
             if last_parced_student == incompleted_participants_samarkand[-1]:
-                set_last_parced_student("samarkand", last_parced_student, 0)
+                set_last_parced_student(db_path_samarkand, last_parced_student, 0)
             
 
         except Exception as e:
@@ -564,7 +565,7 @@ def parse_personal_stats(access_token):
                     update_personal_stats(campus="tashkent", db_path="data/participants/tashkent/personal_stats.db", student=active_participants_tashkent[i], logtime=logtime, exp=exp_value, total_tasks_accepted=total_num_projects_accepted, educational_events=educational_events, entertainment=entertainment_events, total_number_events=total_num_events)
                     if i > 0:
                         set_last_parced_student_personal_stats("tashkent", "data/participants/tashkent/personal_stats.db", active_participants_tashkent[i - 1], 0)
-
+                        
                     set_last_parced_student_personal_stats("tashkent", "data/participants/samarkand/personal_stats.db", active_participants_tashkent[i], 1)
                     print(f"{active_participants_tashkent[i]}, {logtime}, {exp_value}, {total_num_projects_accepted}, {educational_events}, {entertainment_events}, {total_num_events}")
 
@@ -623,7 +624,12 @@ def parse_personal_stats(access_token):
             raise Exception(f"There was a problem during parsing from the api {e}")
 
 
-def sort_personal_stats(db_path, target_student):
+def sort_personal_stats(db_path, campus, target_student):
+
+    if check_being_updated(f"../api/data/participants_to_read/overall.db", campus) == 1:
+        print("being updated")
+        return "being updated"
+
     students = get_all_active_students_personal_stats(db_path)
 
     if not students:
@@ -652,7 +658,6 @@ def sort_personal_stats(db_path, target_student):
             student_rank = student_index + 1
 
         except StopIteration:
-            print(f"Ученик {target_student} не найден в списке.")
             return None
 
         # Calculate percentages
@@ -663,14 +668,21 @@ def sort_personal_stats(db_path, target_student):
                 break
 
         if target_value is None:
-            print(f"Ученик {target_student} не найден в списке.")
-            return None
+            raise Exception(f"Ученик {target_student} не найден в списке.")
 
-        less_than = sum(1 for _, value, *_ in sorted_list if value > target_value)  # Correct comparison
-        more_than = sum(1 for _, value, *_ in sorted_list if value < target_value)  # Correct comparison
+        percent = (student_rank / len(sorted_list)) * 100
 
-        percent_less = (less_than / len(sorted_list)) * 100
-        percent_more = (more_than / len(sorted_list)) * 100
+        percent_less = float()
+        percent_more = float()
+        if percent < 50.0:
+            percent_more = percent
+            percent_less = 100.00 - percent
+        elif percent > 50.0:
+            percent_less = 100.00 - percent
+            percent_more = percent
+            
+
+        
 
         results[key_name] = {  # Store results for each key
             "rank": student_rank,
@@ -678,12 +690,85 @@ def sort_personal_stats(db_path, target_student):
             "percent_less": percent_less,
             "total_students": len(sorted_list),
         }
-        print(f"По {key_name}:")
-        print(f"Ученик {target_student} находится на {student_rank} из {len(sorted_list)}")
-        print(f"{target_student} проводит больше времени/делает больше, чем {percent_more:.2f}% учеников.")
-        print(f"{target_student} проводит меньше времени/делает меньше, чем {percent_less:.2f}% учеников.")
 
     return results
+
+def update_read_databases():
+    # UPDATING PARTICIPANTS 
+    students_tashkent = get_all_participants_for_overall("data/participants/tashkent/participants.db")
+    students_samarkand = get_all_participants_for_overall("data/participants/samarkand/participants.db")
+
+
+    #set being updated 1 for tashkent
+    set_being_updated("data/participants_to_read/overall.db", "tashkent", 1)
+    for student in students_tashkent:
+        username = student[0]
+        logtime = student[1]
+        level = student[2]
+        exp = student[3]
+        exp_to_next_level = student[4]
+
+        update_participant(db_path="data/participants_to_read/tashkent/participants.db", student=username, logtime=logtime, level=level, exp=exp, exp_to_next_level=exp_to_next_level)
+        print(f"The student {username} has been updated in particiapants in Tashkent")
+    
+    set_being_updated("data/participants_to_read/overall.db", "tashkent", 0)
+
+    #set being updated 1 for samarkand
+    set_being_updated("data/participants_to_read/overall.db", "samarkand", 1)
+    for student in students_samarkand:
+        username = student[0]
+        logtime = student[1]
+        level = student[2]
+        exp = student[3]
+        exp_to_next_level = student[4]
+
+        update_participant(db_path="data/participants_to_read/samarkand/participants.db", student=username, logtime=logtime, level=level, exp=exp, exp_to_next_level=exp_to_next_level)
+        print(f"The student {username} has been updated in participants in Tashkent")
+    
+    set_being_updated("data/participants_to_read/overall.db", "samarkand", 0)
+
+
+
+
+
+    # UPDATING PERSONAL STATS 
+
+    personal_stats_tashkent = get_all_personal_stats_for_overall("data/participants/tashkent/personal_stats.db")
+    personal_stats_samarkand = get_all_personal_stats_for_overall("data/participants/samarkand/personal_stats.db")
+
+    set_being_updated("data/participants_to_read/overall.db", "tashkent", 1)
+    for student in personal_stats_tashkent:
+        username = student[0]
+        logtime = student[1]
+        exp = student[2]
+        total_tasks_accepted = student[3]
+        educational_events = student[4]
+        entertainment = student[5]
+        total_number_events = student[6]
+
+        update_personal_stats(campus="tashkent", db_path="data/participants_to_read/tashkent/personal_stats.db", student=username, logtime=logtime, exp=exp, total_tasks_accepted=total_tasks_accepted, educational_events=educational_events, entertainment=entertainment, total_number_events=total_number_events)
+        print(f"The student {username} has been updated in personal_stats in Tashkent")
+    
+    set_being_updated("data/participants_to_read/overall.db", "tashkent", 0)
+
+
+
+    #set being updated 1 for samarkand
+    set_being_updated("data/participants_to_read/overall.db", "samarkand", 1)
+    for student in personal_stats_samarkand:
+        username = student[0]
+        logtime = student[1]
+        exp = student[2]
+        total_tasks_accepted = student[3]
+        educational_events = student[4]
+        entertainment = student[5]
+        total_number_events = student[6]
+
+        update_personal_stats(campus="samarkand", db_path="data/participants_to_read/samarkand/personal_stats.db", student=username, logtime=logtime, exp=exp, total_tasks_accepted=total_tasks_accepted, educational_events=educational_events, entertainment=entertainment, total_number_events=total_number_events)
+        print(f"The student {username} has been updated in personal_stats in Samarkand")
+    
+    set_being_updated("data/participants_to_read/overall.db", "samarkand", 0)
+
 
 
 def main():
@@ -719,9 +804,12 @@ def main():
 
 
         get_specific_project_complеtion_info(token, str(project_id), week, task)
-        # parse_student_info(token)
-        # parse_personal_stats(token)
-        # sort_personal_stats("data/participants/tashkent/personal_stats.db", "oureadag")
+
+        if sys.argv[2] == "parse_students":
+            parse_student_info(token)
+            parse_personal_stats(token)
+            update_read_databases()
+
         update_task(db_path="./data/tasks.db", task=task, being_parsed=0)
 
 

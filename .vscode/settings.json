@@ -4,6 +4,7 @@
         "./api/data",
         "./api/data",
         "./api/data",
-        "./test_bot"
+        "./test_bot",
+        "./api"
     ]
 }
