@@ -920,12 +920,32 @@ def get_all_personal_stats_for_overall(db_path):
             conn.close()
 
 
+def get_all_active_students_by_exp(db_path):
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT student, exp FROM participants WHERE exp > 0")
+        participants_data = cursor.fetchall()
+
+        if participants_data:
+            return participants_data  
+        else:
+            return None  
+
+    except sqlite3.Error as e:
+        print(f"Error getting participant: {e}")
+        return None
+    finally:
+        if conn:
+            conn.close()
+
 
 if __name__ == "__main__":
     # init_table_personal_stats("tashkent", "data/participants/tashkent/personal_stats.db")
     # init_table_personal_stats("samarkand", "data/participants/samarkand/personal_stats.db")
 
-    print(get_all_personal_stats_for_overall("data/participants/samarkand/personal_stats.db"))
+    print(get_all_active_students_by_exp("/data/participants/tashkent/participants.db"))
 
     # init_table_participants("tashkent", "data/participants/tashkent/participants.db")
     # init_table_participants("samarkand", "data/participants/samarkand/participants.db")

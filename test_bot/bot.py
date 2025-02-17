@@ -11,6 +11,7 @@ from api.main import *
 from handle_files import *
 from api_helper import *
 from encrypt import *
+import random
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -634,9 +635,31 @@ async def show_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_reply_markup(reply_markup=reply_markup)
     else:
         report = make_profile_report(language, campus, f"../api/data/participants_to_read/{campus}/personal_stats.db", edu_username)
-
         reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.edit_message_caption(caption=report, reply_markup=reply_markup)
+
+        image_path = f"../api/images/{random.randint(1, 3)}.png"
+
+        try:
+            with open(image_path, "rb") as image_file:
+                # Send the photo with the report as the caption
+                await context.bot.send_photo(
+                    chat_id=update.effective_chat.id,
+                    photo=InputFile(image_file),
+                    caption=report,
+                    reply_markup=reply_markup
+                )
+                # Delete the original message after successfully sending the photo
+                await context.bot.delete_message(update.effective_chat.id, update.effective_message.id)
+        except FileNotFoundError:
+            print.error(f"Image not found at path: {image_path}")
+            # Send a fallback message if the image is not found
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=report,
+                reply_markup=reply_markup
+            )
+        # await query.edit_message_caption(, reply_markup=reply_markup)
+        
         
         # Ник glassole. 
         

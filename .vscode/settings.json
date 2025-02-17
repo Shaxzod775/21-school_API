@@ -5,6 +5,7 @@
         "./api/data",
         "./api/data",
         "./test_bot",
+        "./api",
         "./api"
     ]
 }

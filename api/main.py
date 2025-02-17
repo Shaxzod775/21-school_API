@@ -9,6 +9,8 @@ import json
 import time
 from db_modules.db_api import * 
 from config_api import *
+import sqlite3
+import matplotlib.pyplot as plt
 
 
 def get_api_token():
@@ -770,6 +772,135 @@ def update_read_databases():
     set_being_updated("data/participants_to_read/overall.db", "samarkand", 0)
 
 
+def sort_students_exam_progress(db_path, campus):
+    students = get_all_active_students_by_exp(db_path)
+
+    if not students:
+        print("No students found in the database.")
+        return None
+
+    exams = {"E01D05": "1_week", "E02D12": "2_week", "E03D19": "3_week"}
+    student_progress = {}
+
+    # Create database and table if not exists
+    conn = sqlite3.connect(f"data/tasks/{campus}/exams_progress.db")
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS exams_progress (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            student_username TEXT UNIQUE,
+            E01D05 INTEGER,
+            E02D12 INTEGER,
+            E03D19 INTEGER,
+            E04D26 INTEGER
+        )
+    """)
+    conn.commit()
+
+    # Populate students in the database
+    populate_students_exam_progress(f"data/tasks/{campus}/exams_progress.db", [student[0] for student in students])
+
+    for exam, week in exams.items():
+        for student in students:
+            student_username = student[0]
+            if os.path.exists(f"data/tasks/{campus}/{week}/{exam}/{exam}.db"):
+                result = get_student_task_result(f"data/tasks/{campus}/{week}/{exam}/{exam}.db", student_username)
+                if result is not None:
+                    final_score = result['final_score']
+                    if student_username not in student_progress:
+                        student_progress[student_username] = {}
+                    student_progress[student_username][exam] = final_score
+                    print(f"{exam} final score for student {student_username} is {final_score}")
+
+    for student, scores in student_progress.items():
+        for exam, score in scores.items():
+            update_student_exam_progress(f"data/tasks/{campus}/exams_progress.db", student, exam, score)
+
+    conn.close()
+
+
+def populate_students_exam_progress(db_path, students):
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    for student in students:
+        cursor.execute("""
+            INSERT OR IGNORE INTO exams_progress (student_username)
+            VALUES (?)""", (student,))
+        print(f"Inserted student {student} into the database")
+    conn.commit()
+    conn.close()
+
+
+
+def update_student_exam_progress(db_path, student_username, exam, score):
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute(f"""
+        UPDATE exams_progress
+        SET {exam} = ?
+        WHERE student_username = ?""", (score, student_username))
+    print(f"Updated {exam} score for student {student_username} to {score}")
+    conn.commit()
+    conn.close()
+
+#
+
+
+def plot_exam_progress(campus):
+    db_path = f"data/tasks/{campus}/exams_progress.db"
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT student_username, E01D05, E02D12, E03D19 FROM exams_progress")
+    data = cursor.fetchall()
+
+    conn.close()
+
+    unstable_students = []
+    most_progress_students = []
+    biggest_fall_students = []
+
+    for student, e01d05, e02d12, e03d19 in data:
+        scores = [e01d05, e02d12, e03d19]
+        if None in scores:
+            continue
+
+        # Calculate differences
+        progress = e03d19 - e01d05
+        fall = e01d05 - e03d19
+        instability = max(scores) - min(scores)
+
+        unstable_students.append((student, instability, scores))
+        most_progress_students.append((student, progress, scores))
+        biggest_fall_students.append((student, fall, scores))
+
+    # Sort and select top 5 students for each category
+    unstable_students = sorted(unstable_students, key=lambda x: x[1], reverse=True)[:5]
+    most_progress_students = sorted(most_progress_students, key=lambda x: x[1], reverse=True)[:5]
+    biggest_fall_students = sorted(biggest_fall_students, key=lambda x: x[1], reverse=True)[:5]
+
+    def plot_students(students, title, filename):
+        for student, _, scores in students:
+            exams = ["E01D05", "E02D12", "E03D19"]
+            plt.plot(exams, scores, marker='o', label=student)
+
+        plt.xlabel('Exams')
+        plt.ylabel('Scores')
+        plt.title(title)
+        plt.legend()
+        plt.grid(True)
+        plt.savefig(f"images/{filename}.png")
+        plt.clf()
+
+    plot_students(unstable_students, f'Most Unstable Students in Exam Scores', f"{campus}_unstable_students")
+    plot_students(most_progress_students, f'Students with Most Progress in Exam Scores', f"{campus}_most_progress_students")
+    plot_students(biggest_fall_students, f'Students with Biggest Fall in Exam Scores', f"{campus}_biggest_fall_students")
+
+
+
+# {"type": result[0], "status": result[1], "final_score": result[2]}
+
+
 
 def main():
     if len(sys.argv) > 1:
@@ -803,12 +934,19 @@ def main():
             get_all_intensiv_participants_api(token)
 
 
-        get_specific_project_complеtion_info(token, str(project_id), week, task)
+        # get_specific_project_complеtion_info(token, str(project_id), week, task)
 
-        if sys.argv[2] == "parse_students":
-            parse_student_info(token)
-            parse_personal_stats(token)
-            update_read_databases()
+
+        if len(sys.argv) == 3:
+            if sys.argv[2] == "parse_students":
+                parse_student_info(token)
+                parse_personal_stats(token)
+                update_read_databases()
+            elif sys.argv[2] == "parse_exam_progress":
+                sort_students_exam_progress("data/participants/tashkent/participants.db", "tashkent")
+                sort_students_exam_progress("data/participants/samarkand/participants.db", "samarkand")
+                plot_exam_progress("tashkent")
+                plot_exam_progress("samarkand")
 
         update_task(db_path="./data/tasks.db", task=task, being_parsed=0)
 
