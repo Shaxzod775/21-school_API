@@ -111,7 +111,7 @@ async def stream_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     context.user_data['stream'] = stream
     username = update.effective_user.username
 
-    create_user(context.user_data['chatId'], username, context.user_data['language'], context.user_data['campus'], stream)
+    create_user(update.effective_chat.id, username, context.user_data['language'], context.user_data['campus'], stream)
 
     await show_main_options(update, context)
 
@@ -649,7 +649,7 @@ async def show_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     reply_markup=reply_markup
                 )
                 # Delete the original message after successfully sending the photo
-                await context.bot.delete_message(update.effective_chat.id, update.effective_message.id)
+
         except FileNotFoundError:
             print.error(f"Image not found at path: {image_path}")
             # Send a fallback message if the image is not found
@@ -658,6 +658,8 @@ async def show_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 text=report,
                 reply_markup=reply_markup
             )
+
+        await context.bot.delete_message(update.effective_chat.id, update.effective_message.id)
         # await query.edit_message_caption(, reply_markup=reply_markup)
         
         

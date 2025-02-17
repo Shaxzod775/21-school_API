@@ -45,6 +45,21 @@ def get_user(chatId):
     conn.close()
     return user
 
+def get_all_users():
+    try:    
+        conn = sqlite3.connect('users.db')
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT * FROM users") #Select all columns
+        users = cursor.fetchall()
+
+        conn.close()
+        return users
+    except sqlite3.Error as e:
+        print(f"An error has occured in the database {e}")
+
+
+
 def get_data(chatId, field):
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
@@ -272,8 +287,9 @@ if __name__ == '__main__':
     # init_table_posts()
     # init_table_users()
 
-    print(get_data(719737251, "edu_username"))
+    # print(get_data(719737251, "edu_username"))
 
+    print(get_all_users())
 
     # print(get_post("P01D06", "url_passed"))
 
