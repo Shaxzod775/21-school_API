@@ -2,7 +2,7 @@ import base64
 import hashlib
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
-from config import *
+from configs.config_bot import *
 
 class AESCipher:
     def __init__(self, key): 

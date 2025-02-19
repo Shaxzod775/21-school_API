@@ -1,7 +1,7 @@
 import os
 import sqlite3
 import datetime
-from config_api import *
+from configs.config_api import *
 
 def init_table_tasks():
     try:

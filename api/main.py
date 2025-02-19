@@ -8,9 +8,14 @@ import requests
 import json
 import time
 from db_modules.db_api import * 
-from config_api import *
+from configs.config_api import *
 import sqlite3
 import matplotlib.pyplot as plt
+from report_helpers.report_helper import _process_report_type
+from sorting_data.sort_helper import *
+from db_modules.db_api import *
+from configs.config_bot import *
+from report_helpers.report_helper import *
 
 
 def get_api_token():
@@ -238,7 +243,9 @@ def get_specific_project_complеtion_info(access_token, project_id, week, projec
             null = get_student_task_result_by_status(db_path_tashkent, "NULL")
             registered = get_student_task_result_by_status(db_path_tashkent, "REGISTERED")
             in_progress = get_student_task_result_by_status(db_path_tashkent, "IN_PROGRESS")
+            print(in_progress)
             in_reviews = get_student_task_result_by_status(db_path_tashkent, "IN_REVIEWS")
+            print(in_reviews)
 
             if null:
                 for student in null:
@@ -305,74 +312,6 @@ def get_specific_project_complеtion_info(access_token, project_id, week, projec
                             raise Exception(f"There was a problem during parsing scores from the api!\n{response.status_code}\n{response.text}") 
 
 
-def sort_task_data(filename):
-    try:
-        if not os.path.exists(filename) :
-            raise Exception(f'There is no task file in this folder! {filename}')
-        
-        students = get_all_students_task_results(filename)
-
-        registered = [students[i] for i in range(len(students)) if students[i]['status'] == 'REGISTERED']
-        passed_students = [students[i] for i in range(len(students)) if students[i]['status'] == 'ACCEPTED']
-        failed_students = [students[i] for i in range(len(students)) if students[i]['status'] == 'FAILED']
-        in_progress = [students[i] for i in range(len(students)) if students[i]['status'] == 'IN_PROGRESS']
-        in_reviews = [students[i] for i in range(len(students)) if students[i]['status'] == 'IN_REVIEWS']
-
-        scored_didnt_pass = list()
-
-        for student in students:
-            score = student['final_score']
-            status = student['status']
-            if score != '0' and score != None:
-                if int(score) < 50 and status != 'ACCEPTED':
-                    scored_didnt_pass.append(student)
-
-        scored_didnt_pass_result = sorted(scored_didnt_pass, key=lambda item: int(item['final_score']), reverse=True)
-
-        scored_hundred_percent = [student for student in passed_students if int(student['final_score']) >= 100]
-
-        acceptance_rate = (len(passed_students) / len(students)) * 100
-
-        return passed_students, failed_students, scored_didnt_pass_result, scored_hundred_percent, len(students), acceptance_rate, in_progress, in_reviews, registered
-    except Exception:
-        raise Exception
-
-
-
-def sort_exam_data_before(task):
-    try:
-        if os.path.exists(task) == False:
-            raise Exception(f'There is no task file in this folder! {task}')
-        
-        students = list()
-        
-        with open(task, 'r') as file:
-            line = file.readline()
-            while line:
-                line = file.readline()
-                students.append(line.strip())
-
-        new_students = students[:len(students) - 1]
-
-        task_name = task.split('/')[-1].split('.')[0]
-
-        _, week  = INTENSIVE[task_name]
-
-        registered = [new_students[i] for i in range(len(new_students)) if new_students[i].split(',')[3] == 'REGISTERED']
-
-        registered_needed_data = [[student.split(",")[0], student.split(",")[1], student.split(",")[2]] for student in registered]
-
-        with open(f"data/tasks/{week}/{task_name}/details/registered.csv", "w+") as file1:
-            file1.write(f"student,title,status,total registered: {len(registered_needed_data)}\n")
-            for student in registered_needed_data:
-                username, title, status = student
-                file1.write(f"{username},{title},{status}\n")
-
-        return tuple(registered)
-    except Exception:
-        raise Exception
-
-
 def parse_student_info(access_token):
     HEADERS = {
         'Authorization': 'Bearer {}'.format(access_token),
@@ -403,6 +342,7 @@ def parse_student_info(access_token):
 
 
         try:
+
             intensive_start_date = datetime.date(2025, 1, 27)
             today = datetime.date.today()
             one_week_ago = today - datetime.timedelta(weeks=1)
@@ -415,15 +355,17 @@ def parse_student_info(access_token):
 
             db_path_tashkent = "data/participants/tashkent/participants.db"
             last_parced_student = get_last_parced_student(db_path_tashkent)
-            print(last_parced_student)
             if last_parced_student and last_parced_student in incompleted_participants_tashkent: 
                 index = incompleted_participants_tashkent.index(last_parced_student)
                 incompleted_participants_tashkent = incompleted_participants_tashkent[index:]
 
+            print("Parsing participants info in Tashkent")
             for i in range(len(incompleted_participants_tashkent)):  # Iterate through students (usernames)
                 response_basic_info = requests.get(BASE_URL.format(f"/participants/{incompleted_participants_tashkent[i]}"), headers=HEADERS)
                 time.sleep(0.5)
                 response_logtime = requests.get(BASE_URL.format(f"/participants/{incompleted_participants_tashkent[i]}/logtime?date={date_to_use}"), headers=HEADERS)
+
+                print(f"Response for student {incompleted_participants_tashkent[i]} is {response_basic_info.status_code} and {response_logtime.status_code}")
 
                 if response_logtime.status_code == 200 and response_basic_info.status_code == 200:
                     logtime = float(response_logtime.text)
@@ -437,6 +379,7 @@ def parse_student_info(access_token):
                     db_path_tashkent
                     # Update the database
                     update_participant(db_path_tashkent, incompleted_participants_tashkent[i], logtime=logtime, level=level, exp=exp_value, exp_to_next_level=exp_to_next_level)
+                    print(f"Student {incompleted_participants_tashkent[i]} has been updated in Tashkent")
                     if i > 0:
                         set_last_parced_student(db_path_tashkent, incompleted_participants_tashkent[i - 1], 0)
                     
@@ -458,6 +401,7 @@ def parse_student_info(access_token):
                 index = incompleted_participants_samarkand.index(last_parced_student)
                 incompleted_participants_samarkand = incompleted_participants_samarkand[index:]
 
+            print("Parsing participants info in Samarkand")
             for i in range(len(incompleted_participants_samarkand)):  
                 response_basic_info = requests.get(BASE_URL.format(f"/participants/{incompleted_participants_samarkand[i]}"), headers=HEADERS)
                 time.sleep(0.5)
@@ -473,6 +417,7 @@ def parse_student_info(access_token):
 
                     # Update the database
                     update_participant(db_path_samarkand, incompleted_participants_samarkand[i], logtime=logtime, level=level, exp=exp_value, exp_to_next_level=exp_to_next_level)
+                    print(f"Student {incompleted_participants_tashkent[i]} has been updated in Samarkand")
                     if i > 0:
                         set_last_parced_student(db_path_samarkand, incompleted_participants_samarkand[i - 1], 0)
 
@@ -626,74 +571,6 @@ def parse_personal_stats(access_token):
             raise Exception(f"There was a problem during parsing from the api {e}")
 
 
-def sort_personal_stats(db_path, campus, target_student):
-
-    if check_being_updated(f"../api/data/participants_to_read/overall.db", campus) == 1:
-        print("being updated")
-        return "being updated"
-
-    students = get_all_active_students_personal_stats(db_path)
-
-    if not students:
-        print("No students found in the database.")
-        return None
-
-    # Sort by different criteria
-    sorted_students_logtime = sorted(students, key=lambda x: x[1], reverse=True)
-    sorted_students_tasks = sorted(students, key=lambda x: x[3], reverse=True)
-    sorted_students_edu_events = sorted(students, key=lambda x: x[4], reverse=True)
-    sorted_students_ent_events = sorted(students, key=lambda x: x[5], reverse=True)
-    sorted_students_total_events = sorted(students, key=lambda x: x[6], reverse=True)
-
-    results = {}  # Store all the results
-
-    # Process each sorted list
-    for sorted_list, key_name in [
-        (sorted_students_logtime, "logtime"),
-        (sorted_students_tasks, "tasks"),
-        (sorted_students_edu_events, "edu_events"),
-        (sorted_students_ent_events, "ent_events"),
-        (sorted_students_total_events, "total_events"),
-    ]:
-        try:
-            student_index = next(i for i, (name, *rest) in enumerate(sorted_list) if name == target_student)
-            student_rank = student_index + 1
-
-        except StopIteration:
-            return None
-
-        # Calculate percentages
-        target_value = None  # Generic name for the value we're comparing
-        for name, value, *_ in sorted_list:  # Find target value in the current sorted list
-            if name == target_student:
-                target_value = value
-                break
-
-        if target_value is None:
-            raise Exception(f"Ученик {target_student} не найден в списке.")
-
-        percent = (student_rank / len(sorted_list)) * 100
-
-        percent_less = float()
-        percent_more = float()
-        if percent < 50.0:
-            percent_more = percent
-            percent_less = 100.00 - percent
-        elif percent > 50.0:
-            percent_less = 100.00 - percent
-            percent_more = percent
-            
-
-        
-
-        results[key_name] = {  # Store results for each key
-            "rank": student_rank,
-            "percent_more": percent_more,
-            "percent_less": percent_less,
-            "total_students": len(sorted_list),
-        }
-
-    return results
 
 def update_read_databases():
     # UPDATING PARTICIPANTS 
@@ -728,10 +605,6 @@ def update_read_databases():
         print(f"The student {username} has been updated in participants in Tashkent")
     
     set_being_updated("data/participants_to_read/overall.db", "samarkand", 0)
-
-
-
-
 
     # UPDATING PERSONAL STATS 
 
@@ -772,79 +645,6 @@ def update_read_databases():
     set_being_updated("data/participants_to_read/overall.db", "samarkand", 0)
 
 
-def sort_students_exam_progress(db_path, campus):
-    students = get_all_active_students_by_exp(db_path)
-
-    if not students:
-        print("No students found in the database.")
-        return None
-
-    exams = {"E01D05": "1_week", "E02D12": "2_week", "E03D19": "3_week"}
-    student_progress = {}
-
-    # Create database and table if not exists
-    conn = sqlite3.connect(f"data/tasks/{campus}/exams_progress.db")
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS exams_progress (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            student_username TEXT UNIQUE,
-            E01D05 INTEGER,
-            E02D12 INTEGER,
-            E03D19 INTEGER,
-            E04D26 INTEGER
-        )
-    """)
-    conn.commit()
-
-    # Populate students in the database
-    populate_students_exam_progress(f"data/tasks/{campus}/exams_progress.db", [student[0] for student in students])
-
-    for exam, week in exams.items():
-        for student in students:
-            student_username = student[0]
-            if os.path.exists(f"data/tasks/{campus}/{week}/{exam}/{exam}.db"):
-                result = get_student_task_result(f"data/tasks/{campus}/{week}/{exam}/{exam}.db", student_username)
-                if result is not None:
-                    final_score = result['final_score']
-                    if student_username not in student_progress:
-                        student_progress[student_username] = {}
-                    student_progress[student_username][exam] = final_score
-                    print(f"{exam} final score for student {student_username} is {final_score}")
-
-    for student, scores in student_progress.items():
-        for exam, score in scores.items():
-            update_student_exam_progress(f"data/tasks/{campus}/exams_progress.db", student, exam, score)
-
-    conn.close()
-
-
-def populate_students_exam_progress(db_path, students):
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-    for student in students:
-        cursor.execute("""
-            INSERT OR IGNORE INTO exams_progress (student_username)
-            VALUES (?)""", (student,))
-        print(f"Inserted student {student} into the database")
-    conn.commit()
-    conn.close()
-
-
-
-def update_student_exam_progress(db_path, student_username, exam, score):
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-    cursor.execute(f"""
-        UPDATE exams_progress
-        SET {exam} = ?
-        WHERE student_username = ?""", (score, student_username))
-    print(f"Updated {exam} score for student {student_username} to {score}")
-    conn.commit()
-    conn.close()
-
-#
-
 
 def plot_exam_progress(campus):
     db_path = f"data/tasks/{campus}/exams_progress.db"
@@ -875,9 +675,9 @@ def plot_exam_progress(campus):
         biggest_fall_students.append((student, fall, scores))
 
     # Sort and select top 5 students for each category
-    unstable_students = sorted(unstable_students, key=lambda x: x[1], reverse=True)[:5]
-    most_progress_students = sorted(most_progress_students, key=lambda x: x[1], reverse=True)[:5]
-    biggest_fall_students = sorted(biggest_fall_students, key=lambda x: x[1], reverse=True)[:5]
+    unstable_students = sorted(unstable_students, key=lambda x: x[1], reverse=True)[:10]
+    most_progress_students = sorted(most_progress_students, key=lambda x: x[1], reverse=True)[:10]
+    biggest_fall_students = sorted(biggest_fall_students, key=lambda x: x[1], reverse=True)[:10]
 
     def plot_students(students, title, filename):
         for student, _, scores in students:
@@ -898,59 +698,116 @@ def plot_exam_progress(campus):
 
 
 
-# {"type": result[0], "status": result[1], "final_score": result[2]}
+
+def update_posts_db(task):
+    campuses = ["tashkent", "samarkand"]
+
+    task_id, _ = INTENSIVE[task]
+
+    for campus in campuses:
+        report = make_report(task, "russian", campus, "data/tasks.db", 1)
+        result = [report['report']]
+
+        for language in ["russian", "english", "uzbek"]:
+            for report_type in ['passed', 'hundred', 'scored_didnt_pass', 'in_progress', 'in_reviews', 'registered']:
+                students = report.get(f'scored_{report_type}' if report_type != 'passed' else 'passed_students')
+
+                if students:
+
+                    for lang in ['english', 'russian', 'uzbek']:
+                        titles = {
+                            'english': {
+                                'passed': "List of students who passed the project:",
+                                'hundred': "List of students who scored 100%:",
+                                'didnt_pass': "List of students who didn't pass the project:",
+                                'in_progress': "List of students working on the project:",
+                                'in_reviews': "List of students waiting for review:",
+                                'registered': "List of registered students:"
+                            },
+                            'russian': {
+                                'passed': "Список учеников, сдавших проект:",
+                                'hundred': "Список учеников, набравших 100%:",
+                                'didnt_pass': "Список учеников, не сдавших проект:",
+                                'in_progress': "Список учеников, выполняющих проект:",
+                                'in_reviews': "Список учеников, ожидающих проверку:",
+                                'registered': "Список зарегистрированных учеников:"
+                            },
+                            'uzbek': {
+                                'passed': "Loyiha topshirgan talabalar ro'yxati:",
+                                'hundred': "100% ball olgan talabalar ro'yxati:",
+                                'didnt_pass': "Loyiha topshirmagan talabalar ro'yxati:",
+                                'in_progress': "Loyiha ustida ishlayotgan talabalar ro'yxati:",
+                                'in_reviews': "Tekshiruvni kutayotgan talabalar ro'yxati:",
+                                'registered': "Ro'yxatdan o'tgan talabalar ro'yxati:"
+                            }
+                        }
+
+                        if language == "russian": 
+                                campus_language_specified = "Ташкент" if campus == "tashkent" else "Самарканд"
+                        else:
+                            campus_language_specified = campus.capitalize()
+
+                            post_url = create_telegraph_post(
+                                TELEGRAPH_TOKEN, f"{titles[lang][report_type]} ({task}) {campus_language_specified.capitalize()}",
+                                make_content(students, task_id, lang))['result']['url']
+                            create_post(task, post_url, f'url_{report_type}_{lang}_{campus}')
+                            time.sleep(1)
+
+
 
 
 
 def main():
     if len(sys.argv) > 1:
-        if sys.argv[1] not in INTENSIVE:
-            raise Exception(f"The entered tasks is not among the intensive tasks")
+        if sys.argv[1] == "parse_students":
+            get_api_token()
+            token = get_file_token()
 
-        task = sys.argv[1]
+            # parse_student_info(token)
+            parse_personal_stats(token)
+            update_read_databases()
 
+        elif sys.argv[1] == "parse_exam_progress":
+            sort_students_exam_progress("data/participants/tashkent/participants.db", "tashkent")
+            sort_students_exam_progress("data/participants/samarkand/participants.db", "samarkand")
+            plot_exam_progress("tashkent")
+            plot_exam_progress("samarkand")
 
-        update_task(db_path="./data/tasks.db", task=task, being_parsed=1)
+        if sys.argv[1] not in ("parse_students", "parse_exam_progress"):
+            if sys.argv[1] not in INTENSIVE:
+                raise Exception(f"The entered tasks is not among the intensive tasks")
 
-        get_api_token()
-        token = get_file_token()
-    
-        project_id, week = INTENSIVE[f'{task}']
-
-        if not os.path.exists('data/campuses/campuses.csv'):
-            get_list_of_campuses_api(token)
-            tashkent_id = get_specific_campus_id("tashkent")
-            samarkand_id = get_specific_campus_id("samarkand")
-        else:
-            tashkent_id = get_specific_campus_id("tashkent")
-            samarkand_id = get_specific_campus_id("samarkand")
-            
-
-        if not os.path.exists('data/coalitions/tashkent/intensiv_coalitions.csv') or not os.path.exists('data/coalitions/samarkand/intensiv_coalitions.csv') :
-            get_coatlitions_api(token, tashkent_id, 'tashkent')
-            get_coatlitions_api(token, samarkand_id, 'samarkand')
-
-        if not os.path.exists('data/participants/tashkent/intensiv_participants.csv') or not os.path.exists('data/participants/samarkand/intensiv_participants.csv'):
-            get_all_intensiv_participants_api(token)
+            task = sys.argv[1]
 
 
-        # get_specific_project_complеtion_info(token, str(project_id), week, task)
+            update_task(db_path="./data/tasks.db", task=task, being_parsed=1)
+
+            get_api_token()
+            token = get_file_token()
+        
+            project_id, week = INTENSIVE[f'{task}']
+
+            if not os.path.exists('data/campuses/campuses.csv'):
+                get_list_of_campuses_api(token)
+                tashkent_id = get_specific_campus_id("tashkent")
+                samarkand_id = get_specific_campus_id("samarkand")
+            else:
+                tashkent_id = get_specific_campus_id("tashkent")
+                samarkand_id = get_specific_campus_id("samarkand")
+                
+
+            if not os.path.exists('data/coalitions/tashkent/intensiv_coalitions.csv') or not os.path.exists('data/coalitions/samarkand/intensiv_coalitions.csv') :
+                get_coatlitions_api(token, tashkent_id, 'tashkent')
+                get_coatlitions_api(token, samarkand_id, 'samarkand')
+
+            if not os.path.exists('data/participants/tashkent/intensiv_participants.csv') or not os.path.exists('data/participants/samarkand/intensiv_participants.csv'):
+                get_all_intensiv_participants_api(token)
 
 
-        if len(sys.argv) == 3:
-            if sys.argv[2] == "parse_students":
-                parse_student_info(token)
-                parse_personal_stats(token)
-                update_read_databases()
-            elif sys.argv[2] == "parse_exam_progress":
-                sort_students_exam_progress("data/participants/tashkent/participants.db", "tashkent")
-                sort_students_exam_progress("data/participants/samarkand/participants.db", "samarkand")
-                plot_exam_progress("tashkent")
-                plot_exam_progress("samarkand")
+            # get_specific_project_complеtion_info(token, str(project_id), week, task)
+            update_posts_db(task)
 
-        update_task(db_path="./data/tasks.db", task=task, being_parsed=0)
-
-
+            update_task(db_path="./data/tasks.db", task=task, being_parsed=0)
 
 
 

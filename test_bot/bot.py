@@ -6,11 +6,11 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputFi
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, CallbackContext, MessageHandler, filters
 from posts import create_telegraph_post, make_content
 from db_modules import *  
-from config import *
+from configs.config_bot import *
 from api.main import *
-from handle_files import *
 from api_helper import *
 from encrypt import *
+from report_helpers.report_helper import _process_report_type, make_report, make_profile_report
 import random
 
 
@@ -111,7 +111,7 @@ async def stream_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     context.user_data['stream'] = stream
     username = update.effective_user.username
 
-    create_user(context.user_data['chatId'], username, context.user_data['language'], context.user_data['campus'], stream)
+    create_user(update.effective_chat.id, username, context.user_data['language'], context.user_data['campus'], stream)
 
     await show_main_options(update, context)
 
@@ -336,7 +336,7 @@ async def show_specific_task_info(update: Update, context: ContextTypes.DEFAULT_
     context.user_data['current_campus'] = campus 
     task_id = TASKS_INTENSIVE_BOT[task]
 
-    report = make_report(task, language, campus)
+    report = make_report(task, language, campus, "../api/data/tasks.db", 0)
     result = [report['report']]
 
     for report_type in ['passed', 'hundred', 'scored_didnt_pass', 'in_progress', 'in_reviews', 'registered']:
@@ -389,7 +389,7 @@ async def show_other_campus_task_info(update: Update, context: ContextTypes.DEFA
 
     print(f"Switching from {current_campus} to {other_campus}")
 
-    report_other = make_report(task, language, other_campus)
+    report_other = make_report(task, language, other_campus, "../api/data/tasks.db", 0)
 
     result = [report_other['report']]
     task_id = TASKS_INTENSIVE_BOT[task]
@@ -429,80 +429,80 @@ async def _get_user_language_and_campus(update: Update, context: ContextTypes.DE
 
 
 
-async def _process_report_type(task, students, report_type, language, task_id, result, current_campus):
-    for lang in ['english', 'russian', 'uzbek']:
-        post_url = get_post(task, f'url_{report_type}_{lang}_{current_campus}')
-        if not post_url:
-            titles = {
-                'english': {
-                    'passed': "List of students who passed the project:",
-                    'hundred': "List of students who scored 100%:",
-                    'didnt_pass': "List of students who didn't pass the project:",
-                    'in_progress': "List of students working on the project:",
-                    'in_reviews': "List of students waiting for review:",
-                    'registered': "List of registered students:"
-                },
-                'russian': {
-                    'passed': "Список учеников, сдавших проект:",
-                    'hundred': "Список учеников, набравших 100%:",
-                    'didnt_pass': "Список учеников, не сдавших проект:",
-                    'in_progress': "Список учеников, выполняющих проект:",
-                    'in_reviews': "Список учеников, ожидающих проверку:",
-                    'registered': "Список зарегистрированных учеников:"
-                },
-                'uzbek': {
-                    'passed': "Loyiha topshirgan talabalar ro'yxati:",
-                    'hundred': "100% ball olgan talabalar ro'yxati:",
-                    'didnt_pass': "Loyiha topshirmagan talabalar ro'yxati:",
-                    'in_progress': "Loyiha ustida ishlayotgan talabalar ro'yxati:",
-                    'in_reviews': "Tekshiruvni kutayotgan talabalar ro'yxati:",
-                    'registered': "Ro'yxatdan o'tgan talabalar ro'yxati:"
-                }
-            }
+# async def _process_report_type(task, students, report_type, language, task_id, result, current_campus):
+#     for lang in ['english', 'russian', 'uzbek']:
+#         post_url = get_post(task, f'url_{report_type}_{lang}_{current_campus}')
+#         if not post_url:
+#             titles = {
+#                 'english': {
+#                     'passed': "List of students who passed the project:",
+#                     'hundred': "List of students who scored 100%:",
+#                     'didnt_pass': "List of students who didn't pass the project:",
+#                     'in_progress': "List of students working on the project:",
+#                     'in_reviews': "List of students waiting for review:",
+#                     'registered': "List of registered students:"
+#                 },
+#                 'russian': {
+#                     'passed': "Список учеников, сдавших проект:",
+#                     'hundred': "Список учеников, набравших 100%:",
+#                     'didnt_pass': "Список учеников, не сдавших проект:",
+#                     'in_progress': "Список учеников, выполняющих проект:",
+#                     'in_reviews': "Список учеников, ожидающих проверку:",
+#                     'registered': "Список зарегистрированных учеников:"
+#                 },
+#                 'uzbek': {
+#                     'passed': "Loyiha topshirgan talabalar ro'yxati:",
+#                     'hundred': "100% ball olgan talabalar ro'yxati:",
+#                     'didnt_pass': "Loyiha topshirmagan talabalar ro'yxati:",
+#                     'in_progress': "Loyiha ustida ishlayotgan talabalar ro'yxati:",
+#                     'in_reviews': "Tekshiruvni kutayotgan talabalar ro'yxati:",
+#                     'registered': "Ro'yxatdan o'tgan talabalar ro'yxati:"
+#                 }
+#             }
 
-            if language == "russian": 
-                    campus_language_specified = "Ташкент" if current_campus == "tashkent" else "Самарканд"
-            else:
-                campus_language_specified = current_campus.capitalize()
+#             if language == "russian": 
+#                     campus_language_specified = "Ташкент" if current_campus == "tashkent" else "Самарканд"
+#             else:
+#                 campus_language_specified = current_campus.capitalize()
 
-            post_url = create_telegraph_post(
-                            TELEGRAPH_TOKEN,
-                            f"{titles[lang][report_type]} ({task}) {campus_language_specified.capitalize()}",
-                            make_content(students, task_id, lang) #Make sure students are filtered by campus in make_content
-                        )['result']['url']
-            create_post(task, post_url, f'url_{report_type}_{lang}_{current_campus}')
-            time.sleep(1)
+#             post_url = create_telegraph_post(
+#                             TELEGRAPH_TOKEN,
+#                             f"{titles[lang][report_type]} ({task}) {campus_language_specified.capitalize()}",
+#                             make_content(students, task_id, lang) #Make sure students are filtered by campus in make_content
+#                         )['result']['url']
+#             create_post(task, post_url, f'url_{report_type}_{lang}_{current_campus}')
+#             time.sleep(1)
 
-        if lang == language:
-            descriptions = {
-                'english': {
-                    'passed': "Passed the project",
-                    'hundred': "Scored 100%",
-                    'didnt_pass': "Didn't pass the project",
-                    'in_progress': "Are working on the project",
-                    'in_reviews': "Are waiting for review",
-                    'registered': "Are registered"
-                },
-                'russian': {
-                    'passed': "Cдали проект",
-                    'hundred': "Набрали 100%",
-                    'didnt_pass': "Не сдали проект",
-                    'in_progress': "Выполняют проект",
-                    'in_reviews': "Ожидают проверку",
-                    'registered': "Зарегистрированы"
-                },
-                'uzbek': {
-                    'passed': "Loyihani topshirgan",
-                    'hundred': "100% ball olgan",
-                    'didnt_pass': "Loyihani topshirmagan",
-                    'in_progress': "Loyiha ustida ishlamoqda",
-                    'in_reviews': "Tekshiruvni kutmoqda",
-                    'registered': "Ro'yxatdan o'tgan"
-                }
-            }
+#         if lang == language:
+#             descriptions = {
+#                 'english': {
+#                     'passed': "Passed the project",
+#                     'hundred': "Scored 100%",
+#                     'didnt_pass': "Didn't pass the project",
+#                     'in_progress': "Are working on the project",
+#                     'in_reviews': "Are waiting for review",
+#                     'registered': "Are registered"
+#                 },
+#                 'russian': {
+#                     'passed': "Cдали проект",
+#                     'hundred': "Набрали 100%",
+#                     'didnt_pass': "Не сдали проект",
+#                     'in_progress': "Выполняют проект",
+#                     'in_reviews': "Ожидают проверку",
+#                     'registered': "Зарегистрированы"
+#                 },
+#                 'uzbek': {
+#                     'passed': "Loyihani topshirgan",
+#                     'hundred': "100% ball olgan",
+#                     'didnt_pass': "Loyihani topshirmagan",
+#                     'in_progress': "Loyiha ustida ishlamoqda",
+#                     'in_reviews': "Tekshiruvni kutmoqda",
+#                     'registered': "Ro'yxatdan o'tgan"
+#                 }
+#             }
 
-            result.append("------------------------------------------------------------------------\n\n")
-            result.append(f"{descriptions[lang][report_type]}: {post_url}\n\n")
+#             result.append("------------------------------------------------------------------------\n\n")
+#             result.append(f"{descriptions[lang][report_type]}: {post_url}\n\n")
 
 
 

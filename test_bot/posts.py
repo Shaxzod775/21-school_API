@@ -2,8 +2,8 @@ import sys
 sys.path.append("..")
 
 import requests
-from config_api import *
-from config import *
+from configs.config_api import *
+from configs.config_bot import *
 import json 
 
 
