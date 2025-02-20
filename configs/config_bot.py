@@ -109,9 +109,9 @@ KEYBOARDS = {
             "uzbek": [{"text": "Profil", "callback_data" : "profile"}, {"text":"Topshiriqlar statistikasi", "callback_data" : "stats"}, {"text": "Til", "callback_data": "change_language"}, {"text": "Kampus", "callback_data": "change_campus"}]
         },
         "caption": {  
-            "english": "🏫 Campus: {campus}\n\n✅ Actively visiting the campus: {num_active_students} out of {num_students}\n\n🧑🏻‍🎓 Best student in the campus: {student} \( Level {level} \| {exp} exp \)\n",  
-            "russian": "🏫 Кампус: {campus}\n\n✅ Активно посещают кампус: {num_active_students} из {num_students}\n\n🧑🏻‍🎓 Лучший студент в кампусе: {student} \( {level} уровень \| {exp} exp \)\n", 
-            "uzbek": "🏫 Kampus: {campus}\n\n✅ Kampusga faol tashrif buyuruvchilar: {num_students} dan {num_active_students}\n\n🧑🏻‍🎓 Kampusda eng yaxshi talaba: {student} \( {level} daraja \| {exp} tajriba \)\n" 
+            "english": "🏫 Campus: {campus}\n\n✅ Actively visiting the campus: {num_active_students} out of {num_students}\n\n🧑🏻‍🎓 Best student in the campus: {student} \( Level {level} \| {exp} exp \)\n\n If the buttons are not working, please enter /start",  
+            "russian": "🏫 Кампус: {campus}\n\n✅ Активно посещают кампус: {num_active_students} из {num_students}\n\n🧑🏻‍🎓 Лучший студент в кампусе: {student} \( {level} уровень \| {exp} exp \)\n\nЕсли кнопки не жмуться введите /start", 
+            "uzbek": "🏫 Kampus: {campus}\n\n✅ Kampusga faol tashrif buyuruvchilar: {num_students} dan {num_active_students}\n\n🧑🏻‍🎓 Kampusda eng yaxshi talaba: {student} \( {level} daraja \| {exp} tajriba \)\n\nAgar tugmalar ishlamasa\, iltimos\, /start kiriting" 
         },
         "caption_unauthorized": {
             "english": "😃 For more information please authorize by clicking on \"Profile\" button\n",  

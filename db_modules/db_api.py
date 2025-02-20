@@ -5,7 +5,7 @@ from configs.config_api import *
 
 def init_table_tasks():
     try:
-        conn = sqlite3.connect('./data/tasks.db')
+        conn = sqlite3.connect(f'data_{intensive_month_selected}/tasks.db')
         cursor = conn.cursor()
 
         cursor.execute('''CREATE TABLE IF NOT EXISTS tasks (
@@ -28,7 +28,7 @@ def _validate_task(task):
 
 
 def create_task(task, has_been_parsed, being_parsed, start_date, end_date):  # Include start and end dates
-    conn = sqlite3.connect('./data/tasks.db')
+    conn = sqlite3.connect(f'data_{intensive_month_selected}/tasks.db')
     cursor = conn.cursor()
 
     try:
@@ -200,7 +200,7 @@ def init_table_participants(campus, db_path):
 
 def create_participant(campus, student, logtime=0, level=0, exp=0, exp_to_next_level=0, last_parced=0):
     try:
-        conn = sqlite3.connect(f"data/participants/{campus}/participants.db")
+        conn = sqlite3.connect(f"data_{intensive_month_selected}/participants/{campus}/participants.db")
         cursor = conn.cursor()
 
         cursor.execute("INSERT INTO participants (student, logtime, level, exp, exp_to_next_level, last_parced) VALUES (?, ?, ?, ?, ?, ?)", (student, logtime, level, exp, exp_to_next_level, last_parced))
@@ -262,7 +262,7 @@ def update_participant(db_path, student, logtime=None, level=None, exp=None, exp
 
 def get_participant(campus, student):
     try:
-        conn = sqlite3.connect(f"data/participants/{campus}/participants.db")
+        conn = sqlite3.connect(f"data_{intensive_month_selected}/participants/{campus}/participants.db")
         cursor = conn.cursor()
 
         cursor.execute("SELECT logtime, level, exp, exp_to_next_level FROM participants WHERE student = ?", (student,))
@@ -283,7 +283,7 @@ def get_participant(campus, student):
 
 def get_all_participants(campus):
     try:
-        conn = sqlite3.connect(f"data/participants/{campus}/participants.db")
+        conn = sqlite3.connect(f"data_{intensive_month_selected}/participants/{campus}/participants.db")
         cursor = conn.cursor()
 
         cursor.execute("SELECT * FROM participants")
@@ -304,7 +304,7 @@ def get_all_participants(campus):
 
 def get_incompleted_participants(campus):
     try:
-        conn = sqlite3.connect(f"data/participants/{campus}/participants.db")
+        conn = sqlite3.connect(f"data_{intensive_month_selected}/participants/{campus}/participants.db")
         cursor = conn.cursor()
 
         cursor.execute("SELECT student FROM participants WHERE exp_to_next_level = 0")
@@ -454,7 +454,7 @@ def get_last_parced_student(db_path):
 
 
 def drop_table(table):
-    conn = sqlite3.connect(f'./data/participants/samarkand/{table}.db')
+    conn = sqlite3.connect(f'data_{intensive_month_selected}/participants/samarkand/{table}.db')
     cursor = conn.cursor()
 
     try:
@@ -796,7 +796,7 @@ def get_last_parced_student_personal_stats(db_path):
 
 def set_all_last_parced(campus):
     try:
-        conn = sqlite3.connect(f"data/participants/{campus}/personal_stats.db")
+        conn = sqlite3.connect(f"data_{intensive_month_selected}/participants/{campus}/personal_stats.db")
         cursor = conn.cursor()
 
         cursor.execute("UPDATE personal_stats SET last_parced = 0 WHERE last_parced = 1")
@@ -945,7 +945,7 @@ if __name__ == "__main__":
     # init_table_personal_stats("tashkent", "data/participants/tashkent/personal_stats.db")
     # init_table_personal_stats("samarkand", "data/participants/samarkand/personal_stats.db")
 
-    print(get_all_active_students_by_exp("/data/participants/tashkent/participants.db"))
+    print(get_all_active_students_by_exp(f"data_{intensive_month_selected}/participants/tashkent/participants.db"))
 
     # init_table_participants("tashkent", "data/participants/tashkent/participants.db")
     # init_table_participants("samarkand", "data/participants/samarkand/participants.db")

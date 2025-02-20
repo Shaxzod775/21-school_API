@@ -35,3 +35,6 @@ INTENSIVE = {
     'E04D26': (19459, '4_week'),
 }
 
+INTENSIVE_MONTHS = ["september_november", "february"]
+intensive_month_selected = "february"
+

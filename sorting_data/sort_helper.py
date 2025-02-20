@@ -38,7 +38,7 @@ def sort_students_exam_progress(db_path, campus):
     student_progress = {}
 
     # Create database and table if not exists
-    conn = sqlite3.connect(f"data/tasks/{campus}/exams_progress.db")
+    conn = sqlite3.connect(f"data_{intensive_month_selected}/tasks/{campus}/exams_progress.db")
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS exams_progress (
@@ -53,13 +53,13 @@ def sort_students_exam_progress(db_path, campus):
     conn.commit()
 
     # Populate students in the database
-    populate_students_exam_progress(f"data/tasks/{campus}/exams_progress.db", [student[0] for student in students])
+    populate_students_exam_progress(f"data_{intensive_month_selected}/tasks/{campus}/exams_progress.db", [student[0] for student in students])
 
     for exam, week in exams.items():
         for student in students:
             student_username = student[0]
-            if os.path.exists(f"data/tasks/{campus}/{week}/{exam}/{exam}.db"):
-                result = get_student_task_result(f"data/tasks/{campus}/{week}/{exam}/{exam}.db", student_username)
+            if os.path.exists(f"data_{intensive_month_selected}/tasks/{campus}/{week}/{exam}/{exam}.db"):
+                result = get_student_task_result(f"data_{intensive_month_selected}/tasks/{campus}/{week}/{exam}/{exam}.db", student_username)
                 if result is not None:
                     final_score = result['final_score']
                     if student_username not in student_progress:
@@ -69,14 +69,14 @@ def sort_students_exam_progress(db_path, campus):
 
     for student, scores in student_progress.items():
         for exam, score in scores.items():
-            update_student_exam_progress(f"data/tasks/{campus}/exams_progress.db", student, exam, score)
+            update_student_exam_progress(f"data_{intensive_month_selected}/tasks/{campus}/exams_progress.db", student, exam, score)
 
     conn.close()
 
 
 def sort_personal_stats(db_path, campus, target_student):
 
-    if check_being_updated(f"../api/data/participants_to_read/overall.db", campus) == 1:
+    if check_being_updated(f"../api/data_{intensive_month_selected}/participants_to_read/overall.db", campus) == 1:
         print("being updated")
         return "being updated"
 
@@ -86,16 +86,16 @@ def sort_personal_stats(db_path, campus, target_student):
         print("No students found in the database.")
         return None
 
-    # Sort by different criteria
+
     sorted_students_logtime = sorted(students, key=lambda x: x[1], reverse=True)
     sorted_students_tasks = sorted(students, key=lambda x: x[3], reverse=True)
     sorted_students_edu_events = sorted(students, key=lambda x: x[4], reverse=True)
     sorted_students_ent_events = sorted(students, key=lambda x: x[5], reverse=True)
     sorted_students_total_events = sorted(students, key=lambda x: x[6], reverse=True)
 
-    results = {}  # Store all the results
+    results = {}  
 
-    # Process each sorted list
+
     for sorted_list, key_name in [
         (sorted_students_logtime, "logtime"),
         (sorted_students_tasks, "tasks"),
@@ -110,9 +110,8 @@ def sort_personal_stats(db_path, campus, target_student):
         except StopIteration:
             return None
 
-        # Calculate percentages
-        target_value = None  # Generic name for the value we're comparing
-        for name, value, *_ in sorted_list:  # Find target value in the current sorted list
+        target_value = None  
+        for name, value, *_ in sorted_list: 
             if name == target_student:
                 target_value = value
                 break

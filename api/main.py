@@ -54,7 +54,7 @@ def get_list_of_campuses_api(access_token):
 
         campuses_json = json.loads(_return_value)['campuses']
 
-        with open("data/campuses/campuses.csv", "w+") as file:
+        with open(f"data_{intensive_month_selected}/campuses/campuses.csv", "w+") as file:
             file.write("id,shortName,fullName\n")
             for i in range(len(campuses_json)):
                 id = campuses_json[i]['id']
@@ -65,9 +65,9 @@ def get_list_of_campuses_api(access_token):
         raise Exception(f"There was an error during parsing from the api {BASE_URL.BASE_URL.format('/campuses')}")
 
 
-def get_specific_campus_id(campus_name):
+def get_specific_campus_id(campus_name, intensive_month_selected):
     _return_value = "None"
-    with open("data/campuses/campuses.csv", "r+") as file:
+    with open(f"data_{intensive_month_selected}/campuses/campuses.csv", "r+") as file:
         line = file.readline()
         campuses = list()
         while line:
@@ -78,8 +78,8 @@ def get_specific_campus_id(campus_name):
         shortname = school.split(',')[1]
         if shortname.split()[0] == '21':
             if shortname.split()[1] == campus_name.capitalize():
-             _return_value = school.split(',')[0]
-             break
+                _return_value = school.split(',')[0]
+                break
 
     if _return_value == "None":
         raise Exception(f"There is no campus named {campus_name} among all the campuses")
@@ -110,7 +110,7 @@ def get_coatlitions_api(access_token, campus_id, campus_name):
             else:
                 main_education_coalitions.append(coalitions[i])
 
-        with open(f'data/coalitions/{campus_name}/intensiv_coalitions.csv', 'w+') as int_file:
+        with open(f'data_{intensive_month_selected}/coalitions/{campus_name}/intensiv_coalitions.csv', 'w+') as int_file:
             int_file.write('coalitionId,name\n')
             for i in range(len(intensiv_coalitions)):
                 if i == (len(intensiv_coalitions)):
@@ -120,7 +120,7 @@ def get_coatlitions_api(access_token, campus_id, campus_name):
                 int_file.write(f'{coalitionId},{name}\n')
 
         
-        with open(f'data/coalitions/{campus_name}/main_education_coalitions.csv', 'w+') as int_file:
+        with open(f'data_{intensive_month_selected}/coalitions/{campus_name}/main_education_coalitions.csv', 'w+') as int_file:
             int_file.write('coalitionId,name\n')
             for i in range(len(main_education_coalitions)):
                 coalitionId, name = main_education_coalitions[i]['coalitionId'], main_education_coalitions[i]['name']
@@ -132,7 +132,7 @@ def get_all_intensiv_participants_api(access_token):
     tashkent_intensiv_coalitions_ids = list()
 
     #Tashkent
-    with open('data/coalitions/tashkent/intensiv_coalitions.csv', 'r+') as file:
+    with open(f'data_{intensive_month_selected}/coalitions/tashkent/intensiv_coalitions.csv', 'r+') as file:
         line = file.readline()
         while line:
             line = file.readline()
@@ -158,7 +158,7 @@ def get_all_intensiv_participants_api(access_token):
         except Exception:
             raise Exception
         
-    with open('data/participants/tashkent/intensiv_participants.csv', 'w+') as file:
+    with open(f'data_{intensive_month_selected}/participants/tashkent/intensiv_participants.csv', 'w+') as file:
         file.write('USERNAME\n')
         for username in all_participants_tashkent:
             file.write(f'{username}\n')
@@ -169,7 +169,7 @@ def get_all_intensiv_participants_api(access_token):
     samarkand_intensiv_coalitions_ids = list()
     all_participants_samarkand = list()
 
-    with open('data/coalitions/samarkand/intensiv_coalitions.csv', 'r+') as file:
+    with open(f'data_{intensive_month_selected}/coalitions/samarkand/intensiv_coalitions.csv', 'r+') as file:
         line = file.readline()
         while line:
             line = file.readline()
@@ -195,7 +195,7 @@ def get_all_intensiv_participants_api(access_token):
         except Exception:
             raise Exception
         
-    with open('data/participants/samarkand/intensiv_participants.csv', 'w+') as file:
+    with open(f'data_{intensive_month_selected}/participants/samarkand/intensiv_participants.csv', 'w+') as file:
         file.write('USERNAME\n')
         for username in all_participants_samarkand:
             file.write(f'{username}\n')
@@ -217,22 +217,22 @@ def get_info_participant_project_percent(access_token, username, projectId):
 
     return _return
 
-def get_specific_project_complеtion_info(access_token, project_id, week, project_name):
+def get_specific_project_complеtion_info(access_token, project_id, week, project_name, intensive_month_selected):
         HEADERS = {
         'Authorization': 'Bearer {}'.format(access_token),
         }
 
-        if os.path.exists(f"data/participants/tashkent/participants.db") and os.path.exists(f"data/participants/samarkand/participants.db"):
-            db_path_tashkent = f"data/tasks/tashkent/{week}/{project_name}/{project_name}.db"
-            students_tashkent = get_all_students("data/participants/tashkent/participants.db")
+        if os.path.exists(f"data_{intensive_month_selected}/participants/tashkent/participants.db") and os.path.exists(f"data_{intensive_month_selected}/participants/samarkand/participants.db"):
+            db_path_tashkent = f"data_{intensive_month_selected}/tasks/tashkent/{week}/{project_name}/{project_name}.db"
+            students_tashkent = get_all_students(f"data_{intensive_month_selected}/participants/tashkent/participants.db")
 
             if not os.path.exists(db_path_tashkent):
                 init_table_for_task(db_path_tashkent)
             populate_task_results(db_path_tashkent, students_tashkent)
             
 
-            db_path_samarkand = f"data/tasks/samarkand/{week}/{project_name}/{project_name}.db"
-            students_samarkand = get_all_students("data/participants/samarkand/participants.db")
+            db_path_samarkand = f"data_{intensive_month_selected}/tasks/samarkand/{week}/{project_name}/{project_name}.db"
+            students_samarkand = get_all_students(f"data_{intensive_month_selected}/participants/samarkand/participants.db")
 
             if not os.path.exists(db_path_samarkand):
                 init_table_for_task(db_path_samarkand)
@@ -243,9 +243,7 @@ def get_specific_project_complеtion_info(access_token, project_id, week, projec
             null = get_student_task_result_by_status(db_path_tashkent, "NULL")
             registered = get_student_task_result_by_status(db_path_tashkent, "REGISTERED")
             in_progress = get_student_task_result_by_status(db_path_tashkent, "IN_PROGRESS")
-            print(in_progress)
             in_reviews = get_student_task_result_by_status(db_path_tashkent, "IN_REVIEWS")
-            print(in_reviews)
 
             if null:
                 for student in null:
@@ -317,9 +315,9 @@ def parse_student_info(access_token):
         'Authorization': 'Bearer {}'.format(access_token),
     }
 
-    if os.path.exists(f"data/participants/tashkent/intensiv_participants.csv") and os.path.exists(f"data/participants/samarkand/intensiv_participants.csv"):
+    if os.path.exists(f"data_{intensive_month_selected}/participants/tashkent/intensiv_participants.csv") and os.path.exists(f"data_{intensive_month_selected}/participants/samarkand/intensiv_participants.csv"):
         students_tashkent = list()
-        with open(f"data/participants/tashkent/intensiv_participants.csv", 'r') as file_tashkent:
+        with open(f"data_{intensive_month_selected}/participants/tashkent/intensiv_participants.csv", 'r') as file_tashkent:
             student = file_tashkent.readline()
             while student:
                 student = file_tashkent.readline()
@@ -330,7 +328,7 @@ def parse_student_info(access_token):
         populate_participants("tashkent", tashkent_students_usernames)
 
         students_samarkand = list()
-        with open(f"data/participants/samarkand/intensiv_participants.csv", 'r') as file_samarkand:
+        with open(f"data_{intensive_month_selected}/participants/samarkand/intensiv_participants.csv", 'r') as file_samarkand:
             student = file_samarkand.readline()
             while student:
                 student = file_samarkand.readline()
@@ -342,7 +340,6 @@ def parse_student_info(access_token):
 
 
         try:
-
             intensive_start_date = datetime.date(2025, 1, 27)
             today = datetime.date.today()
             one_week_ago = today - datetime.timedelta(weeks=1)
@@ -353,7 +350,7 @@ def parse_student_info(access_token):
             if not incompleted_participants_tashkent:
                 incompleted_participants_tashkent = tashkent_students_usernames
 
-            db_path_tashkent = "data/participants/tashkent/participants.db"
+            db_path_tashkent = f"data_{intensive_month_selected}/participants/tashkent/participants.db"
             last_parced_student = get_last_parced_student(db_path_tashkent)
             if last_parced_student and last_parced_student in incompleted_participants_tashkent: 
                 index = incompleted_participants_tashkent.index(last_parced_student)
@@ -394,7 +391,7 @@ def parse_student_info(access_token):
                 incompleted_participants_samarkand = samarkand_students_usernames
 
 
-            db_path_samarkand = "data/participants/samarkand/participants.db"
+            db_path_samarkand = f"data_{intensive_month_selected}/participants/samarkand/participants.db"
             last_parced_student = get_last_parced_student(db_path_samarkand)
 
             if last_parced_student and last_parced_student in incompleted_participants_samarkand:  
@@ -444,9 +441,9 @@ def parse_personal_stats(access_token):
         'Authorization': 'Bearer {}'.format(access_token),
     }
 
-    if os.path.exists(f"data/participants/tashkent/intensiv_participants.csv") and os.path.exists(f"data/participants/samarkand/intensiv_participants.csv"):
+    if os.path.exists(f"data_{intensive_month_selected}/participants/tashkent/intensiv_participants.csv") and os.path.exists(f"data_{intensive_month_selected}/participants/samarkand/intensiv_participants.csv"):
         students_tashkent = list()
-        with open(f"data/participants/tashkent/intensiv_participants.csv", 'r') as file_tashkent:
+        with open(f"data_{intensive_month_selected}/participants/tashkent/intensiv_participants.csv", 'r') as file_tashkent:
             student = file_tashkent.readline()
             while student:
                 student = file_tashkent.readline()
@@ -454,10 +451,10 @@ def parse_personal_stats(access_token):
 
         new_students_tashkent = students_tashkent[:len(students_tashkent) - 1]
         tashkent_students_usernames = [student.strip() for student in new_students_tashkent]
-        populate_personal_stats("tashkent", "data/participants/tashkent/personal_stats.db",  tashkent_students_usernames)
+        populate_personal_stats("tashkent", f"data_{intensive_month_selected}/participants/tashkent/personal_stats.db",  tashkent_students_usernames)
 
         students_samarkand = list()
-        with open(f"data/participants/samarkand/intensiv_participants.csv", 'r') as file_samarkand:
+        with open(f"data_{intensive_month_selected}/participants/samarkand/intensiv_participants.csv", 'r') as file_samarkand:
             student = file_samarkand.readline()
             while student:
                 student = file_samarkand.readline()
@@ -465,7 +462,7 @@ def parse_personal_stats(access_token):
 
         new_students_samarkand = students_samarkand[:len(students_samarkand) - 1]
         samarkand_students_usernames = [student.strip() for student in new_students_samarkand]
-        populate_personal_stats("samarkand", "data/participants/samarkand/personal_stats.db",  samarkand_students_usernames)
+        populate_personal_stats("samarkand", f"data_{intensive_month_selected}/participants/samarkand/personal_stats.db",  samarkand_students_usernames)
 
         try:
             intensive_start_date = datetime.date(2025, 1, 27)
@@ -473,12 +470,12 @@ def parse_personal_stats(access_token):
             one_week_ago = today - datetime.timedelta(weeks=1)
             date_to_use = one_week_ago if one_week_ago - datetime.timedelta(weeks=1) > intensive_start_date else intensive_start_date
 
-            active_participants_tashkent = get_active_student_list("data/participants/tashkent/participants.db")
+            active_participants_tashkent = get_active_student_list(f"data_{intensive_month_selected}/participants/tashkent/participants.db")
 
             if not active_participants_tashkent:
                 active_participants_tashkent = tashkent_students_usernames
 
-            db_path_tashkent = "data/participants/tashkent/personal_stats.db"
+            db_path_tashkent = f"data_{intensive_month_selected}/participants/tashkent/personal_stats.db"
             last_parced_student = get_last_parced_student_personal_stats(db_path_tashkent)
 
             if last_parced_student and last_parced_student in active_participants_tashkent:  
@@ -509,22 +506,22 @@ def parse_personal_stats(access_token):
                     entertainment_events = len([badge for badge in response_badges_json["badges"] if badge["name"] == "Entertainment event"])
                     total_num_events = educational_events + entertainment_events
 
-                    update_personal_stats(campus="tashkent", db_path="data/participants/tashkent/personal_stats.db", student=active_participants_tashkent[i], logtime=logtime, exp=exp_value, total_tasks_accepted=total_num_projects_accepted, educational_events=educational_events, entertainment=entertainment_events, total_number_events=total_num_events)
+                    update_personal_stats(campus="tashkent", db_path=f"data_{intensive_month_selected}/participants/tashkent/personal_stats.db", student=active_participants_tashkent[i], logtime=logtime, exp=exp_value, total_tasks_accepted=total_num_projects_accepted, educational_events=educational_events, entertainment=entertainment_events, total_number_events=total_num_events)
                     if i > 0:
-                        set_last_parced_student_personal_stats("tashkent", "data/participants/tashkent/personal_stats.db", active_participants_tashkent[i - 1], 0)
+                        set_last_parced_student_personal_stats("tashkent", f"data_{intensive_month_selected}/participants/tashkent/personal_stats.db", active_participants_tashkent[i - 1], 0)
                         
-                    set_last_parced_student_personal_stats("tashkent", "data/participants/samarkand/personal_stats.db", active_participants_tashkent[i], 1)
+                    set_last_parced_student_personal_stats("tashkent", f"data_{intensive_month_selected}/participants/samarkand/personal_stats.db", active_participants_tashkent[i], 1)
                     print(f"{active_participants_tashkent[i]}, {logtime}, {exp_value}, {total_num_projects_accepted}, {educational_events}, {entertainment_events}, {total_num_events}")
 
                     time.sleep(1)
 
 
-            active_participants_samarkand = get_active_student_list("data/participants/samarkand/participants.db")
+            active_participants_samarkand = get_active_student_list(f"data_{intensive_month_selected}/participants/samarkand/participants.db")
 
             if not active_participants_samarkand:
                 active_participants_samarkand = samarkand_students_usernames
 
-            db_path_samarkand = "data/participants/samarkand/personal_stats.db"
+            db_path_samarkand = f"data_{intensive_month_selected}/participants/samarkand/personal_stats.db"
             last_parced_student = get_last_parced_student_personal_stats(db_path_samarkand)
 
             if last_parced_student and last_parced_student in active_participants_samarkand:  
@@ -555,11 +552,11 @@ def parse_personal_stats(access_token):
                     entertainment_events = len([badge for badge in response_badges_json["badges"] if badge["name"] == "Entertainment event"])
                     total_num_events = educational_events + entertainment_events
 
-                    update_personal_stats(campus="samarkand", db_path="data/participants/samarkand/personal_stats.db", student=active_participants_samarkand[i], logtime=logtime, exp=exp_value, total_tasks_accepted=total_num_projects_accepted, educational_events=educational_events, entertainment=entertainment_events, total_number_events=total_num_events)
+                    update_personal_stats(campus="samarkand", db_path=f"data_{intensive_month_selected}/participants/samarkand/personal_stats.db", student=active_participants_samarkand[i], logtime=logtime, exp=exp_value, total_tasks_accepted=total_num_projects_accepted, educational_events=educational_events, entertainment=entertainment_events, total_number_events=total_num_events)
                     if i > 0:
-                        set_last_parced_student_personal_stats("samarkand", "data/participants/samarkand/personal_stats.db", active_participants_samarkand[i - 1], 0)
+                        set_last_parced_student_personal_stats("samarkand", f"data_{intensive_month_selected}/participants/samarkand/personal_stats.db", active_participants_samarkand[i - 1], 0)
 
-                    set_last_parced_student_personal_stats("samarkand", "data/participants/samarkand/personal_stats.db", active_participants_samarkand[i], 1)
+                    set_last_parced_student_personal_stats("samarkand", f"data_{intensive_month_selected}/participants/samarkand/personal_stats.db", active_participants_samarkand[i], 1)
                     print(f"{active_participants_samarkand[i]}, {logtime}, {exp_value}, {total_num_projects_accepted}, {educational_events}, {entertainment_events}, {total_num_events}")
 
                     time.sleep(1)
@@ -574,12 +571,12 @@ def parse_personal_stats(access_token):
 
 def update_read_databases():
     # UPDATING PARTICIPANTS 
-    students_tashkent = get_all_participants_for_overall("data/participants/tashkent/participants.db")
-    students_samarkand = get_all_participants_for_overall("data/participants/samarkand/participants.db")
+    students_tashkent = get_all_participants_for_overall(f"data_{intensive_month_selected}/participants/tashkent/participants.db")
+    students_samarkand = get_all_participants_for_overall(f"data_{intensive_month_selected}/participants/samarkand/participants.db")
 
 
     #set being updated 1 for tashkent
-    set_being_updated("data/participants_to_read/overall.db", "tashkent", 1)
+    set_being_updated(f"data_{intensive_month_selected}/participants_to_read/overall.db", "tashkent", 1)
     for student in students_tashkent:
         username = student[0]
         logtime = student[1]
@@ -587,13 +584,13 @@ def update_read_databases():
         exp = student[3]
         exp_to_next_level = student[4]
 
-        update_participant(db_path="data/participants_to_read/tashkent/participants.db", student=username, logtime=logtime, level=level, exp=exp, exp_to_next_level=exp_to_next_level)
+        update_participant(db_path=f"data_{intensive_month_selected}/participants_to_read/tashkent/participants.db", student=username, logtime=logtime, level=level, exp=exp, exp_to_next_level=exp_to_next_level)
         print(f"The student {username} has been updated in particiapants in Tashkent")
     
-    set_being_updated("data/participants_to_read/overall.db", "tashkent", 0)
+    set_being_updated(f"data_{intensive_month_selected}/participants_to_read/overall.db", "tashkent", 0)
 
     #set being updated 1 for samarkand
-    set_being_updated("data/participants_to_read/overall.db", "samarkand", 1)
+    set_being_updated(f"data_{intensive_month_selected}/participants_to_read/overall.db", "samarkand", 1)
     for student in students_samarkand:
         username = student[0]
         logtime = student[1]
@@ -601,17 +598,17 @@ def update_read_databases():
         exp = student[3]
         exp_to_next_level = student[4]
 
-        update_participant(db_path="data/participants_to_read/samarkand/participants.db", student=username, logtime=logtime, level=level, exp=exp, exp_to_next_level=exp_to_next_level)
+        update_participant(db_path=f"data_{intensive_month_selected}/participants_to_read/samarkand/participants.db", student=username, logtime=logtime, level=level, exp=exp, exp_to_next_level=exp_to_next_level)
         print(f"The student {username} has been updated in participants in Tashkent")
     
-    set_being_updated("data/participants_to_read/overall.db", "samarkand", 0)
+    set_being_updated(f"data_{intensive_month_selected}/participants_to_read/overall.db", "samarkand", 0)
 
     # UPDATING PERSONAL STATS 
 
-    personal_stats_tashkent = get_all_personal_stats_for_overall("data/participants/tashkent/personal_stats.db")
-    personal_stats_samarkand = get_all_personal_stats_for_overall("data/participants/samarkand/personal_stats.db")
+    personal_stats_tashkent = get_all_personal_stats_for_overall(f"data_{intensive_month_selected}/participants/tashkent/personal_stats.db")
+    personal_stats_samarkand = get_all_personal_stats_for_overall(f"data_{intensive_month_selected}/participants/samarkand/personal_stats.db")
 
-    set_being_updated("data/participants_to_read/overall.db", "tashkent", 1)
+    set_being_updated(f"data_{intensive_month_selected}/participants_to_read/overall.db", "tashkent", 1)
     for student in personal_stats_tashkent:
         username = student[0]
         logtime = student[1]
@@ -621,15 +618,15 @@ def update_read_databases():
         entertainment = student[5]
         total_number_events = student[6]
 
-        update_personal_stats(campus="tashkent", db_path="data/participants_to_read/tashkent/personal_stats.db", student=username, logtime=logtime, exp=exp, total_tasks_accepted=total_tasks_accepted, educational_events=educational_events, entertainment=entertainment, total_number_events=total_number_events)
+        update_personal_stats(campus="tashkent", db_path=f"data_{intensive_month_selected}/participants_to_read/tashkent/personal_stats.db", student=username, logtime=logtime, exp=exp, total_tasks_accepted=total_tasks_accepted, educational_events=educational_events, entertainment=entertainment, total_number_events=total_number_events)
         print(f"The student {username} has been updated in personal_stats in Tashkent")
     
-    set_being_updated("data/participants_to_read/overall.db", "tashkent", 0)
+    set_being_updated(f"data_{intensive_month_selected}/participants_to_read/overall.db", "tashkent", 0)
 
 
 
     #set being updated 1 for samarkand
-    set_being_updated("data/participants_to_read/overall.db", "samarkand", 1)
+    set_being_updated(f"data_{intensive_month_selected}/participants_to_read/overall.db", "samarkand", 1)
     for student in personal_stats_samarkand:
         username = student[0]
         logtime = student[1]
@@ -639,15 +636,15 @@ def update_read_databases():
         entertainment = student[5]
         total_number_events = student[6]
 
-        update_personal_stats(campus="samarkand", db_path="data/participants_to_read/samarkand/personal_stats.db", student=username, logtime=logtime, exp=exp, total_tasks_accepted=total_tasks_accepted, educational_events=educational_events, entertainment=entertainment, total_number_events=total_number_events)
+        update_personal_stats(campus="samarkand", db_path=f"data_{intensive_month_selected}/participants_to_read/samarkand/personal_stats.db", student=username, logtime=logtime, exp=exp, total_tasks_accepted=total_tasks_accepted, educational_events=educational_events, entertainment=entertainment, total_number_events=total_number_events)
         print(f"The student {username} has been updated in personal_stats in Samarkand")
     
-    set_being_updated("data/participants_to_read/overall.db", "samarkand", 0)
+    set_being_updated(f"data_{intensive_month_selected}/participants_to_read/overall.db", "samarkand", 0)
 
 
 
 def plot_exam_progress(campus):
-    db_path = f"data/tasks/{campus}/exams_progress.db"
+    db_path = f"data_{intensive_month_selected}/tasks/{campus}/exams_progress.db"
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
@@ -689,7 +686,7 @@ def plot_exam_progress(campus):
         plt.title(title)
         plt.legend()
         plt.grid(True)
-        plt.savefig(f"images/{filename}.png")
+        plt.savefig(f"data_{intensive_month_selected}/images/{filename}.png")
         plt.clf()
 
     plot_students(unstable_students, f'Most Unstable Students in Exam Scores', f"{campus}_unstable_students")
@@ -699,13 +696,13 @@ def plot_exam_progress(campus):
 
 
 
-def update_posts_db(task):
+def update_posts_db(task, intensive_month_selected):
     campuses = ["tashkent", "samarkand"]
 
     task_id, _ = INTENSIVE[task]
 
     for campus in campuses:
-        report = make_report(task, "russian", campus, "data/tasks.db", 1)
+        report = make_report(task, "russian", campus, f"data_{intensive_month_selected}/tasks.db", 1)
         result = [report['report']]
 
         for language in ["russian", "english", "uzbek"]:
@@ -756,58 +753,61 @@ def update_posts_db(task):
 
 
 
-
 def main():
-    if len(sys.argv) > 1:
+    if len(sys.argv) == 3:
+        if sys.argv[2] not in INTENSIVE_MONTHS:
+            raise Exception(f"The entered month is not among the intensive months")
+        
+        intensive_month_selected = sys.argv[2]
+
         if sys.argv[1] == "parse_students":
             get_api_token()
             token = get_file_token()
 
-            # parse_student_info(token)
+            parse_student_info(token)
             parse_personal_stats(token)
             update_read_databases()
 
         elif sys.argv[1] == "parse_exam_progress":
-            sort_students_exam_progress("data/participants/tashkent/participants.db", "tashkent")
-            sort_students_exam_progress("data/participants/samarkand/participants.db", "samarkand")
+        
+            sort_students_exam_progress(f"data_{intensive_month_selected}/participants/tashkent/participants.db", "tashkent")
+            sort_students_exam_progress(f"data_{intensive_month_selected}/participants/samarkand/participants.db", "samarkand")
             plot_exam_progress("tashkent")
             plot_exam_progress("samarkand")
 
         if sys.argv[1] not in ("parse_students", "parse_exam_progress"):
             if sys.argv[1] not in INTENSIVE:
-                raise Exception(f"The entered tasks is not among the intensive tasks")
+                raise Exception(f"The entered task is not among the intensive tasks")
 
             task = sys.argv[1]
 
-
-            update_task(db_path="./data/tasks.db", task=task, being_parsed=1)
+            update_task(db_path=f"data_{intensive_month_selected}/tasks.db", task=task, being_parsed=1)
 
             get_api_token()
             token = get_file_token()
         
             project_id, week = INTENSIVE[f'{task}']
 
-            if not os.path.exists('data/campuses/campuses.csv'):
+            if not os.path.exists(f'data_{intensive_month_selected}/campuses/campuses.csv'):
                 get_list_of_campuses_api(token)
-                tashkent_id = get_specific_campus_id("tashkent")
-                samarkand_id = get_specific_campus_id("samarkand")
-            else:
-                tashkent_id = get_specific_campus_id("tashkent")
-                samarkand_id = get_specific_campus_id("samarkand")
+            
+            tashkent_id = get_specific_campus_id("tashkent", intensive_month_selected)
+            samarkand_id = get_specific_campus_id("samarkand", intensive_month_selected)
                 
 
-            if not os.path.exists('data/coalitions/tashkent/intensiv_coalitions.csv') or not os.path.exists('data/coalitions/samarkand/intensiv_coalitions.csv') :
+            if not os.path.exists(f'data_{intensive_month_selected}/coalitions/tashkent/intensiv_coalitions.csv') or not os.path.exists(f'data_{intensive_month_selected}/coalitions/samarkand/intensiv_coalitions.csv') :
                 get_coatlitions_api(token, tashkent_id, 'tashkent')
                 get_coatlitions_api(token, samarkand_id, 'samarkand')
 
-            if not os.path.exists('data/participants/tashkent/intensiv_participants.csv') or not os.path.exists('data/participants/samarkand/intensiv_participants.csv'):
+            if not os.path.exists(f'data_{intensive_month_selected}/participants/tashkent/intensiv_participants.csv') or not os.path.exists(f'data_{intensive_month_selected}/participants/samarkand/intensiv_participants.csv'):
                 get_all_intensiv_participants_api(token)
 
 
-            # get_specific_project_complеtion_info(token, str(project_id), week, task)
-            update_posts_db(task)
+            get_specific_project_complеtion_info(token, str(project_id), week, task, intensive_month_selected)
+            update_posts_db(task, intensive_month_selected)
 
-            update_task(db_path="./data/tasks.db", task=task, being_parsed=0)
+            update_task(db_path=f"data_{intensive_month_selected}/tasks.db", task=task, being_parsed=0)
+
 
 
 

@@ -1,7 +1,7 @@
 import sqlite3
 
 def init_table_users():
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect('../bot_databases/users.db')
     cursor = conn.cursor()
 
     cursor.execute('''CREATE TABLE IF NOT EXISTS users (
@@ -102,7 +102,7 @@ def update_user(chatId, telegram_username=None, edu_username=None, edu_password=
 
 
 def drop_table(table):
-    conn = sqlite3.connect(f'{table}.db')
+    conn = sqlite3.connect(f'../bot_databases/{table}.db')
     cursor = conn.cursor()
 
     try:

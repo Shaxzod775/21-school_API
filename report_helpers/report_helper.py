@@ -57,7 +57,7 @@ def make_report(task, language, campus_arg, db_path, updating):
                 }[language], "report_ready": False}
             
 
-    filepath = f'../api/data/tasks/{campus_arg}/{week}/{task}/{task}.db'
+    filepath = f'../api/data_{intensive_month_selected}/tasks/{campus_arg}/{week}/{task}/{task}.db'
     if not os.path.exists(filepath):
         return {'report': {  
             "english": "Report is not yet ready",
@@ -339,6 +339,6 @@ async def _process_report_type(task, students, report_type, language, task_id, r
 
 
 if __name__ == "__main__":
-    result = make_profile_report("russian", "tashkent", "../api/data/participants/tashkent/personal_stats.db", "oureadag")
+    result = make_profile_report("russian", "tashkent", f"../api/data_{intensive_month_selected}/participants/tashkent/personal_stats.db", "oureadag")
     # result1 = sort_personal_stats("../api/data/participants/tashkent/personal_stats.db", "tashkent", "oureadag")
 

@@ -4,7 +4,6 @@ sys.path.append("..")
 import telegram.constants
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputFile, InputMediaPhoto
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, CallbackContext, MessageHandler, filters
-from posts import create_telegraph_post, make_content
 from db_modules import *  
 from configs.config_bot import *
 from api.main import *
@@ -128,9 +127,9 @@ async def show_main_options(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     except KeyError as e:
         raise KeyError(f"Wrong language has been entered {e}")
 
-    student, level, exp = get_best_student(f"../api/data/participants/{campus}/participants.db")
+    student, level, exp = get_best_student(f"../api/data_{intensive_month_selected}/participants/{campus}/participants.db")
 
-    num_active_students = get_active_students(f"../api/data/participants/{campus}/participants.db")
+    num_active_students = get_active_students(f"../api/data_{intensive_month_selected}/participants/{campus}/participants.db")
   
     num_students = 699 if campus == "tashkent" else 347
 
@@ -336,7 +335,7 @@ async def show_specific_task_info(update: Update, context: ContextTypes.DEFAULT_
     context.user_data['current_campus'] = campus 
     task_id = TASKS_INTENSIVE_BOT[task]
 
-    report = make_report(task, language, campus, "../api/data/tasks.db", 0)
+    report = make_report(task, language, campus, f"../api/data_{intensive_month_selected}/tasks.db", 0)
     result = [report['report']]
 
     for report_type in ['passed', 'hundred', 'scored_didnt_pass', 'in_progress', 'in_reviews', 'registered']:
@@ -389,7 +388,7 @@ async def show_other_campus_task_info(update: Update, context: ContextTypes.DEFA
 
     print(f"Switching from {current_campus} to {other_campus}")
 
-    report_other = make_report(task, language, other_campus, "../api/data/tasks.db", 0)
+    report_other = make_report(task, language, other_campus, f"../api/data_{intensive_month_selected}/tasks.db", 0)
 
     result = [report_other['report']]
     task_id = TASKS_INTENSIVE_BOT[task]
@@ -426,83 +425,6 @@ async def _get_user_language_and_campus(update: Update, context: ContextTypes.DE
     except KeyError as e:
         raise KeyError(f"An error occurred\n{e}")
     return language, campus
-
-
-
-# async def _process_report_type(task, students, report_type, language, task_id, result, current_campus):
-#     for lang in ['english', 'russian', 'uzbek']:
-#         post_url = get_post(task, f'url_{report_type}_{lang}_{current_campus}')
-#         if not post_url:
-#             titles = {
-#                 'english': {
-#                     'passed': "List of students who passed the project:",
-#                     'hundred': "List of students who scored 100%:",
-#                     'didnt_pass': "List of students who didn't pass the project:",
-#                     'in_progress': "List of students working on the project:",
-#                     'in_reviews': "List of students waiting for review:",
-#                     'registered': "List of registered students:"
-#                 },
-#                 'russian': {
-#                     'passed': "Список учеников, сдавших проект:",
-#                     'hundred': "Список учеников, набравших 100%:",
-#                     'didnt_pass': "Список учеников, не сдавших проект:",
-#                     'in_progress': "Список учеников, выполняющих проект:",
-#                     'in_reviews': "Список учеников, ожидающих проверку:",
-#                     'registered': "Список зарегистрированных учеников:"
-#                 },
-#                 'uzbek': {
-#                     'passed': "Loyiha topshirgan talabalar ro'yxati:",
-#                     'hundred': "100% ball olgan talabalar ro'yxati:",
-#                     'didnt_pass': "Loyiha topshirmagan talabalar ro'yxati:",
-#                     'in_progress': "Loyiha ustida ishlayotgan talabalar ro'yxati:",
-#                     'in_reviews': "Tekshiruvni kutayotgan talabalar ro'yxati:",
-#                     'registered': "Ro'yxatdan o'tgan talabalar ro'yxati:"
-#                 }
-#             }
-
-#             if language == "russian": 
-#                     campus_language_specified = "Ташкент" if current_campus == "tashkent" else "Самарканд"
-#             else:
-#                 campus_language_specified = current_campus.capitalize()
-
-#             post_url = create_telegraph_post(
-#                             TELEGRAPH_TOKEN,
-#                             f"{titles[lang][report_type]} ({task}) {campus_language_specified.capitalize()}",
-#                             make_content(students, task_id, lang) #Make sure students are filtered by campus in make_content
-#                         )['result']['url']
-#             create_post(task, post_url, f'url_{report_type}_{lang}_{current_campus}')
-#             time.sleep(1)
-
-#         if lang == language:
-#             descriptions = {
-#                 'english': {
-#                     'passed': "Passed the project",
-#                     'hundred': "Scored 100%",
-#                     'didnt_pass': "Didn't pass the project",
-#                     'in_progress': "Are working on the project",
-#                     'in_reviews': "Are waiting for review",
-#                     'registered': "Are registered"
-#                 },
-#                 'russian': {
-#                     'passed': "Cдали проект",
-#                     'hundred': "Набрали 100%",
-#                     'didnt_pass': "Не сдали проект",
-#                     'in_progress': "Выполняют проект",
-#                     'in_reviews': "Ожидают проверку",
-#                     'registered': "Зарегистрированы"
-#                 },
-#                 'uzbek': {
-#                     'passed': "Loyihani topshirgan",
-#                     'hundred': "100% ball olgan",
-#                     'didnt_pass': "Loyihani topshirmagan",
-#                     'in_progress': "Loyiha ustida ishlamoqda",
-#                     'in_reviews': "Tekshiruvni kutmoqda",
-#                     'registered': "Ro'yxatdan o'tgan"
-#                 }
-#             }
-
-#             result.append("------------------------------------------------------------------------\n\n")
-#             result.append(f"{descriptions[lang][report_type]}: {post_url}\n\n")
 
 
 
@@ -634,46 +556,27 @@ async def show_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup = InlineKeyboardMarkup(keyboard)
         await query.edit_message_reply_markup(reply_markup=reply_markup)
     else:
-        report = make_profile_report(language, campus, f"../api/data/participants_to_read/{campus}/personal_stats.db", edu_username)
+        report = make_profile_report(language, campus, f"../api/data_{intensive_month_selected}/participants_to_read/{campus}/personal_stats.db", edu_username)
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        image_path = f"../api/images/{random.randint(1, 3)}.png"
+        image_path = f"../api/data_{intensive_month_selected}/images/{random.randint(1, 3)}.png"
 
         try:
             with open(image_path, "rb") as image_file:
-                # Send the photo with the report as the caption
                 await context.bot.send_photo(
                     chat_id=update.effective_chat.id,
                     photo=InputFile(image_file),
                     caption=report,
                     reply_markup=reply_markup
                 )
-                # Delete the original message after successfully sending the photo
                 await context.bot.delete_message(update.effective_chat.id, update.effective_message.id)
         except FileNotFoundError:
             print.error(f"Image not found at path: {image_path}")
-            # Send a fallback message if the image is not found
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text=report,
                 reply_markup=reply_markup
             )
-        # await query.edit_message_caption(, reply_markup=reply_markup)
-        
-        
-        # Ник glassole. 
-        
-        # Кампус Ташкент
-
-        # Вы проводите больше времени в кампусе чем 20% участников интесива
-
-        # Вы сдали больше заданий чем 10% участников (вам нужно внимательнее и усерднее выполнять задания) или (вы молодец так держать)
-        
-        # Вы сделали больше ивентов чем 15% участников (вам нужно делать больше ивентов) или ()
-
-        # Вы топ-5 лучший ученик интенсива в Ташкенте и топ-2 среди двух кампусов 
-
-        # Вы ебанутый трудяга! Так держать!
 
 def main():
     app = Application.builder().token(TOKEN).build()
