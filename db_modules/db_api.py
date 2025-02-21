@@ -198,9 +198,9 @@ def init_table_participants(campus, db_path):
         if conn: #Ensure conn is not None before closing
             conn.close()
 
-def create_participant(campus, student, logtime=0, level=0, exp=0, exp_to_next_level=0, last_parced=0):
+def create_participant(db_path, campus, student, logtime=0, level=0, exp=0, exp_to_next_level=0, last_parced=0):
     try:
-        conn = sqlite3.connect(f"data_{intensive_month_selected}/participants/{campus}/participants.db")
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
         cursor.execute("INSERT INTO participants (student, logtime, level, exp, exp_to_next_level, last_parced) VALUES (?, ?, ?, ?, ?, ?)", (student, logtime, level, exp, exp_to_next_level, last_parced))
@@ -260,9 +260,9 @@ def update_participant(db_path, student, logtime=None, level=None, exp=None, exp
         if conn:
             conn.close()
 
-def get_participant(campus, student):
+def get_participant(db_path, campus, student):
     try:
-        conn = sqlite3.connect(f"data_{intensive_month_selected}/participants/{campus}/participants.db")
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
         cursor.execute("SELECT logtime, level, exp, exp_to_next_level FROM participants WHERE student = ?", (student,))
@@ -413,10 +413,10 @@ def get_all_students(db_path):
 
 
 
-def populate_participants(campus, students):
+def populate_participants(db_path, campus, students):
     for student in students:
-        if not get_participant(campus, student):  # Check if student already exists
-            create_participant(campus, student)
+        if not get_participant(db_path, campus, student):  # Check if student already exists
+            create_participant(db_path, campus, student)
         else:
             print(f"Student {student} already exists. Skipping.")
 
@@ -476,8 +476,6 @@ def init_table_for_task(db_path):
         db_directory = "/".join(db_path.split("/")[:-1])
         if not os.path.exists(db_directory):
             os.mkdir(db_directory)
-        if not os.path.exists(db_directory + "/details"):
-            os.mkdir(db_directory + "/details")
         with open(db_path, "w") as file:
             pass
 

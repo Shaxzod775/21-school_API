@@ -148,7 +148,7 @@ def parse_old_student_info(access_token, intensive_month_selected):
 
         new_students_tashkent = students_tashkent[:len(students_tashkent) - 1]
         tashkent_students_usernames = [student.strip() for student in new_students_tashkent]
-        populate_participants("tashkent", tashkent_students_usernames)
+        populate_participants(f"data_{intensive_month_selected}/participants/tashkent/participants.db", "tashkent", tashkent_students_usernames)
 
         students_samarkand = list()
         with open(f"data_{intensive_month_selected}/participants/samarkand/main_education_participants.csv", 'r') as file_samarkand:
@@ -159,7 +159,7 @@ def parse_old_student_info(access_token, intensive_month_selected):
 
         new_students_samarkand = students_samarkand[:len(students_samarkand) - 1]
         samarkand_students_usernames = [student.strip() for student in new_students_samarkand]
-        populate_participants("samarkand", samarkand_students_usernames)
+        populate_participants(f"data_{intensive_month_selected}/participants/samarkand/participants.db", "samarkand", samarkand_students_usernames)
 
 
         try:
@@ -288,10 +288,21 @@ def main():
         if not os.path.exists(f"data_{intensive_month_selected}/participants/samarkand/main_education_participants.csv"):
             sort_samarkand_participants(token, task, intensive_month_selected)
 
-        parse_old_student_info(token, intensive_month_selected)
+        # parse_old_student_info(token, intensive_month_selected)
 
         get_specific_project_complеtion_info(token, str(project_id), week, task, intensive_month_selected)
 
+
+# Сколько в среднем заданий сдало большинство прошедших
+# Сколько в среднем экзаменов сдало большинство прошедших
+# Сколько в среднем образовательных ивентов сделало большинство прошедших
+# Сколько в среднем развлекательных ивентов сделало большинство прошедших
+# Сколько в среднем ивентов сделало большинство прошедших
+# Сколько в среднем времени в кампусе провело большинство прошедших
+
+# Топ-1 по лвлу за интенсив
+# Топ-1 по среднему времени в кампусе за интенсив
+# Топ-1 по количеству ивентов за интенсив
 
 if __name__ == "__main__":
     main()

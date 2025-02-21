@@ -578,6 +578,8 @@ async def show_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 reply_markup=reply_markup
             )
 
+
+
 def main():
     app = Application.builder().token(TOKEN).build()
 

@@ -241,16 +241,16 @@ def get_specific_project_complеtion_info(access_token, project_id, week, projec
             
             incompleted_students_tashkent = list()
             null = get_student_task_result_by_status(db_path_tashkent, "NULL")
-            registered = get_student_task_result_by_status(db_path_tashkent, "REGISTERED")
+            # registered = get_student_task_result_by_status(db_path_tashkent, "REGISTERED")
             in_progress = get_student_task_result_by_status(db_path_tashkent, "IN_PROGRESS")
             in_reviews = get_student_task_result_by_status(db_path_tashkent, "IN_REVIEWS")
 
             if null:
                 for student in null:
                     incompleted_students_tashkent.append(student)
-            elif registered:
-                for student in registered:
-                    incompleted_students_tashkent.append(student)
+            # elif registered:
+            #     for student in registered:
+            #         incompleted_students_tashkent.append(student)
             elif in_progress:
                 for student in in_progress:
                     incompleted_students_tashkent.append(student)
@@ -310,7 +310,7 @@ def get_specific_project_complеtion_info(access_token, project_id, week, projec
                             raise Exception(f"There was a problem during parsing scores from the api!\n{response.status_code}\n{response.text}") 
 
 
-def parse_student_info(access_token):
+def parse_student_info(access_token, intensive_month_selected):
     HEADERS = {
         'Authorization': 'Bearer {}'.format(access_token),
     }
@@ -325,7 +325,7 @@ def parse_student_info(access_token):
 
         new_students_tashkent = students_tashkent[:len(students_tashkent) - 1]
         tashkent_students_usernames = [student.strip() for student in new_students_tashkent]
-        populate_participants("tashkent", tashkent_students_usernames)
+        populate_participants(f"data_{intensive_month_selected}/participants/tashkent/participants.db","tashkent", tashkent_students_usernames)
 
         students_samarkand = list()
         with open(f"data_{intensive_month_selected}/participants/samarkand/intensiv_participants.csv", 'r') as file_samarkand:
@@ -336,7 +336,7 @@ def parse_student_info(access_token):
 
         new_students_samarkand = students_samarkand[:len(students_samarkand) - 1]
         samarkand_students_usernames = [student.strip() for student in new_students_samarkand]
-        populate_participants("samarkand", samarkand_students_usernames)
+        populate_participants(f"data_{intensive_month_selected}/participants/samarkand/participants.db", "samarkand", samarkand_students_usernames)
 
 
         try:
@@ -361,8 +361,6 @@ def parse_student_info(access_token):
                 response_basic_info = requests.get(BASE_URL.format(f"/participants/{incompleted_participants_tashkent[i]}"), headers=HEADERS)
                 time.sleep(0.5)
                 response_logtime = requests.get(BASE_URL.format(f"/participants/{incompleted_participants_tashkent[i]}/logtime?date={date_to_use}"), headers=HEADERS)
-
-                print(f"Response for student {incompleted_participants_tashkent[i]} is {response_basic_info.status_code} and {response_logtime.status_code}")
 
                 if response_logtime.status_code == 200 and response_basic_info.status_code == 200:
                     logtime = float(response_logtime.text)
@@ -436,7 +434,7 @@ def parse_student_info(access_token):
             raise Exception(f"There was a problem during parsing from the api {e}")
         
 
-def parse_personal_stats(access_token):
+def parse_personal_stats(access_token, intensive_month_selected):
     HEADERS = {
         'Authorization': 'Bearer {}'.format(access_token),
     }
@@ -764,8 +762,8 @@ def main():
             get_api_token()
             token = get_file_token()
 
-            parse_student_info(token)
-            parse_personal_stats(token)
+            parse_student_info(token, intensive_month_selected)
+            parse_personal_stats(token, intensive_month_selected)
             update_read_databases()
 
         elif sys.argv[1] == "parse_exam_progress":
