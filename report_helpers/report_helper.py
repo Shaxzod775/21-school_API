@@ -67,6 +67,13 @@ def make_report(task, language, campus_arg, db_path, updating):
     
     passed_students, _, scored_didnt_pass, scored_hundred_percent, num_of_students, acceptance_rate, in_progress, in_reviews, registered = sort_task_data(filepath)
 
+    if len(passed_students) == 0:
+        return {'report': {  
+            "english": "Nobody was able to pass this project in this campus 🙈",
+            "russian": "Никто не смог сдать этот проэкт в этом кампусе 🙈",
+            "uzbek": "Hech kim ushbu loyihani topshira olmadi 🙈"
+        }[language], "report_ready": True}
+
     _return['passed_students'] = [[student['student'], student['final_score']] for student in passed_students]
     _return['scored_hundred'] = [[student['student'], student['final_score']] for student in scored_hundred_percent]
     _return['scored_didnt_pass'] = [[student['student'], student['final_score']] for student in scored_didnt_pass]
@@ -74,6 +81,7 @@ def make_report(task, language, campus_arg, db_path, updating):
     _return['in_reviews'] = [[student['student'], student['final_score']] for student in in_reviews]
     _return['registered'] = [[student['student'], student['final_score']] for student in registered]
 
+    
     if language == "russian": 
             campus_language_specified = "Ташкент" if campus_arg == "tashkent" else "Самарканд"
     else:

@@ -34,7 +34,7 @@ def sort_students_exam_progress(db_path, campus):
         print("No students found in the database.")
         return None
 
-    exams = {"E01D05": "1_week", "E02D12": "2_week", "E03D19": "3_week"}
+    exams = {"E01D05": "1_week", "E02D12": "2_week", "E03D19": "3_week", "E04D26": "4_week"}
     student_progress = {}
 
     # Create database and table if not exists

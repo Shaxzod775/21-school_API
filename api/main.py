@@ -87,118 +87,51 @@ def get_specific_campus_id(campus_name, intensive_month_selected):
     return _return_value
 
 
-def get_coatlitions_api(access_token, campus_id, campus_name):
-    HEADERS = {
-    'Authorization': 'Bearer {}'.format(access_token),
-    }
-
+def get_coalitions_api(access_token, campus_id, campus_name):
+    HEADERS = {'Authorization': f'Bearer {access_token}'}
     response = requests.get(BASE_URL.format(f"/campuses/{campus_id}/coalitions"), headers=HEADERS)
 
     if response.status_code == 200:
         coalitions = json.loads(response.text)['coalitions']
-
-        intensiv_tribe_names = ['AYIQ', 'JAYRON', 'LAYLAK', 'QOPLON']
-
-        if campus_name == 'samarkand':
-            intensiv_tribe_names = ['BO\'RI', 'HUMO', 'LOCHIN', 'TUYA']
-
-        intensiv_coalitions = list()
-        main_education_coalitions = list()
-        for i in range(len(coalitions)):
-            if coalitions[i]['name'] in intensiv_tribe_names:
-                intensiv_coalitions.append(coalitions[i])
-            else:
-                main_education_coalitions.append(coalitions[i])
-
-        with open(f'data_{intensive_month_selected}/coalitions/{campus_name}/intensiv_coalitions.csv', 'w+') as int_file:
-            int_file.write('coalitionId,name\n')
-            for i in range(len(intensiv_coalitions)):
-                if i == (len(intensiv_coalitions)):
-                    coalitionId, name = intensiv_coalitions[i]['coalitionId'], intensiv_coalitions[i]['name']
-                    int_file.write(f'{coalitionId},{name}')
-                coalitionId, name = intensiv_coalitions[i]['coalitionId'], intensiv_coalitions[i]['name']
-                int_file.write(f'{coalitionId},{name}\n')
-
+        intensiv_tribe_names = ['AYIQ', 'JAYRON', 'LAYLAK', 'QOPLON'] if campus_name == 'tashkent' else ['BO\'RI', 'HUMO', 'LOCHIN', 'TUYA']
         
-        with open(f'data_{intensive_month_selected}/coalitions/{campus_name}/main_education_coalitions.csv', 'w+') as int_file:
-            int_file.write('coalitionId,name\n')
-            for i in range(len(main_education_coalitions)):
-                coalitionId, name = main_education_coalitions[i]['coalitionId'], main_education_coalitions[i]['name']
-                int_file.write(f'{coalitionId},{name}\n')
+        intensiv_coalitions = [c for c in coalitions if c['name'] in intensiv_tribe_names]
+        main_education_coalitions = [c for c in coalitions if c['name'] not in intensiv_tribe_names]
+
+        def write_to_file(filename, data):
+            with open(filename, 'w+') as file:
+                file.write('coalitionId,name\n')
+                for coalition in data:
+                    file.write(f"{coalition['coalitionId']},{coalition['name']}\n")
+
+        write_to_file(f'data_{intensive_month_selected}/coalitions/{campus_name}/intensiv_coalitions.csv', intensiv_coalitions)
+        write_to_file(f'data_{intensive_month_selected}/coalitions/{campus_name}/main_education_coalitions.csv', main_education_coalitions)
 
 
 def get_all_intensiv_participants_api(access_token):
-    all_participants_tashkent = list()
-    tashkent_intensiv_coalitions_ids = list()
+    def fetch_participants(campus):
+        coalition_ids = []
+        participants = []
 
-    #Tashkent
-    with open(f'data_{intensive_month_selected}/coalitions/tashkent/intensiv_coalitions.csv', 'r+') as file:
-        line = file.readline()
-        while line:
-            line = file.readline()
-            tashkent_intensiv_coalitions_ids.append(line.split(',')[0])
+        with open(f'data_{intensive_month_selected}/coalitions/{campus}/intensiv_coalitions.csv', 'r') as file:
+            coalition_ids = [line.split(',')[0] for line in file.readlines()[1:]]
 
-    new_intensiv_coalitions_ids = tashkent_intensiv_coalitions_ids[:-1]
-
-    for i in range(len(new_intensiv_coalitions_ids)):
-        try: 
-            HEADERS = {
-            'Authorization': 'Bearer {}'.format(access_token),
-            }
-
-            response = requests.get(BASE_URL.format(f"/coalitions/{new_intensiv_coalitions_ids[i]}/participants?limit=1000&offset=0"), headers=HEADERS)
-
+        for coalition_id in coalition_ids:
+            HEADERS = {'Authorization': f'Bearer {access_token}'}
+            response = requests.get(BASE_URL.format(f"/coalitions/{coalition_id}/participants?limit=1000&offset=0"), headers=HEADERS)
             if response.status_code == 200:
-                for student in json.loads(response.text)['participants']:
-                    all_participants_tashkent.append(student)
-                    print(student)
-                    time.sleep(0.5)
+                participants.extend(json.loads(response.text)['participants'])
+                time.sleep(0.5)
             else:
-                raise Exception(f"There was a mistake while parcing participants from the API\n{response.status_code}\n{response.text}")
-        except Exception:
-            raise Exception
-        
-    with open(f'data_{intensive_month_selected}/participants/tashkent/intensiv_participants.csv', 'w+') as file:
-        file.write('USERNAME\n')
-        for username in all_participants_tashkent:
-            file.write(f'{username}\n')
+                raise Exception(f"Error fetching participants: {response.status_code}\n{response.text}")
 
+        with open(f'data_{intensive_month_selected}/participants/{campus}/intensiv_participants.csv', 'w') as file:
+            file.write('USERNAME\n')
+            for username in participants:
+                file.write(f'{username}\n')
 
-    #Samarkand
-
-    samarkand_intensiv_coalitions_ids = list()
-    all_participants_samarkand = list()
-
-    with open(f'data_{intensive_month_selected}/coalitions/samarkand/intensiv_coalitions.csv', 'r+') as file:
-        line = file.readline()
-        while line:
-            line = file.readline()
-            samarkand_intensiv_coalitions_ids.append(line.split(',')[0])
-
-    new_samarkand_intensiv_coalitions_ids = samarkand_intensiv_coalitions_ids[:-1]
-
-    for i in range(len(new_samarkand_intensiv_coalitions_ids)):
-        time.sleep(0.5)
-        try: 
-            HEADERS = {
-            'Authorization': 'Bearer {}'.format(access_token),
-            }
-
-            response = requests.get(BASE_URL.format(f"/coalitions/{new_samarkand_intensiv_coalitions_ids[i]}/participants?limit=1000&offset=0"), headers=HEADERS)
-
-            if response.status_code == 200:
-                for student in json.loads(response.text)['participants']:
-                    all_participants_samarkand.append(student)
-                    print(student)
-            else:
-                raise Exception(f"There was a mistake while parcing participants from the API\n{response.status_code}\n{response.text}")
-        except Exception:
-            raise Exception
-        
-    with open(f'data_{intensive_month_selected}/participants/samarkand/intensiv_participants.csv', 'w+') as file:
-        file.write('USERNAME\n')
-        for username in all_participants_samarkand:
-            file.write(f'{username}\n')
+    fetch_participants('tashkent')
+    fetch_participants('samarkand')
 
 
 def get_info_participant_project_percent(access_token, username, projectId):
@@ -218,435 +151,145 @@ def get_info_participant_project_percent(access_token, username, projectId):
     return _return
 
 def get_specific_project_complеtion_info(access_token, project_id, week, project_name, intensive_month_selected):
-        HEADERS = {
-        'Authorization': 'Bearer {}'.format(access_token),
-        }
+    HEADERS = {'Authorization': f'Bearer {access_token}'}
 
-        if os.path.exists(f"data_{intensive_month_selected}/participants/tashkent/participants.db") and os.path.exists(f"data_{intensive_month_selected}/participants/samarkand/participants.db"):
-            db_path_tashkent = f"data_{intensive_month_selected}/tasks/tashkent/{week}/{project_name}/{project_name}.db"
-            students_tashkent = get_all_students(f"data_{intensive_month_selected}/participants/tashkent/participants.db")
+    def process_students(db_path, students):
+        if not os.path.exists(db_path):
+            init_table_for_task(db_path)
+        populate_task_results(db_path, students)
 
-            if not os.path.exists(db_path_tashkent):
-                init_table_for_task(db_path_tashkent)
-            populate_task_results(db_path_tashkent, students_tashkent)
-            
+        incompleted_students = []
+        for status in ["NULL", "REGISTERED", "IN_PROGRESS", "IN_REVIEWS"]:
+            incompleted_students.extend(get_student_task_result_by_status(db_path, status))
 
-            db_path_samarkand = f"data_{intensive_month_selected}/tasks/samarkand/{week}/{project_name}/{project_name}.db"
-            students_samarkand = get_all_students(f"data_{intensive_month_selected}/participants/samarkand/participants.db")
+        for student in incompleted_students:
+            response = requests.get(BASE_URL.format(f"/participants/{student}/projects/{project_id}"), headers=HEADERS)
+            if response.status_code == 200:
+                response_json = response.json()
+                update_task_result(db_path, student, response_json['title'], response_json['type'], response_json['status'], response_json['finalPercentage'])
+                print(f"{student},{response_json['title']},{response_json['type']},{response_json['status']},{response_json['finalPercentage']}")
+                time.sleep(1)
+            else:
+                raise Exception(f"Error parsing scores from API!\n{response.status_code}\n{response.text}\nStudent: {student}")
 
-            if not os.path.exists(db_path_samarkand):
-                init_table_for_task(db_path_samarkand)
-            populate_task_results(db_path_samarkand, students_samarkand)
-
-            
-            incompleted_students_tashkent = list()
-            null = get_student_task_result_by_status(db_path_tashkent, "NULL")
-            # registered = get_student_task_result_by_status(db_path_tashkent, "REGISTERED")
-            in_progress = get_student_task_result_by_status(db_path_tashkent, "IN_PROGRESS")
-            in_reviews = get_student_task_result_by_status(db_path_tashkent, "IN_REVIEWS")
-
-            if null:
-                for student in null:
-                    incompleted_students_tashkent.append(student)
-            # elif registered:
-            #     for student in registered:
-            #         incompleted_students_tashkent.append(student)
-            elif in_progress:
-                for student in in_progress:
-                    incompleted_students_tashkent.append(student)
-            elif in_reviews:
-                for student in in_reviews:
-                    incompleted_students_tashkent.append(student)
-
-            if incompleted_students_tashkent:
-                for i in range(len(incompleted_students_tashkent)):
-                        response = requests.get(BASE_URL.format(f"/participants/{incompleted_students_tashkent[i]}/projects/{project_id}"), headers=HEADERS)
-                        if response.status_code == 200:
-                            response_json = json.loads(response.text)
-                            title = response_json['title']
-                            type = response_json['type']
-                            status = response_json['status']
-                            final_percentage = response_json['finalPercentage']
-                            task_updated = update_task_result(db_path=db_path_tashkent, student=incompleted_students_tashkent[i], title=title, type=type, status=status, final_score=final_percentage)
-                            if task_updated:
-                                print(f'{incompleted_students_tashkent[i]},{title},{type},{status},{final_percentage}')
-                            time.sleep(1)
-                        else:
-                            raise Exception(f"There was a problem during parsing scores from the api!\n{response.status_code}\n{response.text}\nStudent username: {incompleted_students_tashkent[i]}")
-            
-
-            incompleted_students_samarkand = list()
-            null = get_student_task_result_by_status(db_path_samarkand, "NULL")
-            registered = get_student_task_result_by_status(db_path_samarkand, "REGISTERED")
-            in_progress = get_student_task_result_by_status(db_path_samarkand, "IN_PROGRESS")
-            in_reviews = get_student_task_result_by_status(db_path_samarkand, "IN_REVIEWS")
-
-            if null:
-                for student in null:
-                    incompleted_students_samarkand.append(student)
-            elif registered:
-                for student in registered:
-                    incompleted_students_samarkand.append(student)
-            elif in_progress:
-                for student in in_progress:
-                    incompleted_students_samarkand.append(student)
-            elif in_reviews:
-                for student in in_reviews:
-                    incompleted_students_samarkand.append(student)
-            
-            if incompleted_students_samarkand:
-                for i in range(len(incompleted_students_samarkand)):
-                        response = requests.get(BASE_URL.format(f"/participants/{incompleted_students_samarkand[i]}/projects/{project_id}"), headers=HEADERS)
-                        if response.status_code == 200:
-                            response_json = json.loads(response.text)
-                            title = response_json['title']
-                            type = response_json['type']
-                            status = response_json['status']
-                            final_percentage = response_json['finalPercentage']
-                            update_task_result(db_path_samarkand, incompleted_students_samarkand[i], title, type, status, final_percentage)
-                            print(f'{incompleted_students_samarkand[i]},{title},{type},{status},{final_percentage}')
-                            time.sleep(1)
-                        else:
-                            raise Exception(f"There was a problem during parsing scores from the api!\n{response.status_code}\n{response.text}") 
+    if os.path.exists(f"data_{intensive_month_selected}/participants/tashkent/participants.db") and os.path.exists(f"data_{intensive_month_selected}/participants/samarkand/participants.db"):
+        process_students(f"data_{intensive_month_selected}/tasks/tashkent/{week}/{project_name}/{project_name}.db", get_all_students(f"data_{intensive_month_selected}/participants/tashkent/participants.db"))
+        process_students(f"data_{intensive_month_selected}/tasks/samarkand/{week}/{project_name}/{project_name}.db", get_all_students(f"data_{intensive_month_selected}/participants/samarkand/participants.db"))
 
 
 def parse_student_info(access_token, intensive_month_selected):
-    HEADERS = {
-        'Authorization': 'Bearer {}'.format(access_token),
-    }
+    HEADERS = {'Authorization': f'Bearer {access_token}'}
+
+    def fetch_students(file_path):
+        with open(file_path, 'r') as file:
+            return [line.strip() for line in file.readlines()[1:]]
+
+    def update_students(campus, students):
+        db_path = f"data_{intensive_month_selected}/participants/{campus}/participants.db"
+        last_parsed = get_last_parced_student(db_path)
+        if last_parsed in students:
+            students = students[students.index(last_parsed):]
+
+        for i, student in enumerate(students):
+            response_basic_info = requests.get(BASE_URL.format(f"/participants/{student}"), headers=HEADERS)
+            response_logtime = requests.get(BASE_URL.format(f"/participants/{student}/logtime?date={date_to_use}"), headers=HEADERS)
+            if response_basic_info.status_code == 200 and response_logtime.status_code == 200:
+                logtime = float(response_logtime.text)
+                info = response_basic_info.json()
+                update_participant(db_path, student, logtime, info['level'], info['expValue'], info['expToNextLevel'])
+                set_last_parced_student(db_path, student, 1)
+                if i > 0:
+                    set_last_parced_student(db_path, students[i - 1], 0)
+                time.sleep(1)
 
     if os.path.exists(f"data_{intensive_month_selected}/participants/tashkent/intensiv_participants.csv") and os.path.exists(f"data_{intensive_month_selected}/participants/samarkand/intensiv_participants.csv"):
-        students_tashkent = list()
-        with open(f"data_{intensive_month_selected}/participants/tashkent/intensiv_participants.csv", 'r') as file_tashkent:
-            student = file_tashkent.readline()
-            while student:
-                student = file_tashkent.readline()
-                students_tashkent.append(student.strip())
-
-        new_students_tashkent = students_tashkent[:len(students_tashkent) - 1]
-        tashkent_students_usernames = [student.strip() for student in new_students_tashkent]
-        populate_participants(f"data_{intensive_month_selected}/participants/tashkent/participants.db","tashkent", tashkent_students_usernames)
-
-        students_samarkand = list()
-        with open(f"data_{intensive_month_selected}/participants/samarkand/intensiv_participants.csv", 'r') as file_samarkand:
-            student = file_samarkand.readline()
-            while student:
-                student = file_samarkand.readline()
-                students_samarkand.append(student.strip())
-
-        new_students_samarkand = students_samarkand[:len(students_samarkand) - 1]
-        samarkand_students_usernames = [student.strip() for student in new_students_samarkand]
-        populate_participants(f"data_{intensive_month_selected}/participants/samarkand/participants.db", "samarkand", samarkand_students_usernames)
-
-
-        try:
-            intensive_start_date = datetime.date(2025, 1, 27)
-            today = datetime.date.today()
-            one_week_ago = today - datetime.timedelta(weeks=1)
-            date_to_use = one_week_ago if one_week_ago - datetime.timedelta(weeks=1) > intensive_start_date else intensive_start_date
-
-            incompleted_participants_tashkent = get_incompleted_participants("tashkent")
-
-            if not incompleted_participants_tashkent:
-                incompleted_participants_tashkent = tashkent_students_usernames
-
-            db_path_tashkent = f"data_{intensive_month_selected}/participants/tashkent/participants.db"
-            last_parced_student = get_last_parced_student(db_path_tashkent)
-            if last_parced_student and last_parced_student in incompleted_participants_tashkent: 
-                index = incompleted_participants_tashkent.index(last_parced_student)
-                incompleted_participants_tashkent = incompleted_participants_tashkent[index:]
-
-            print("Parsing participants info in Tashkent")
-            for i in range(len(incompleted_participants_tashkent)):  # Iterate through students (usernames)
-                response_basic_info = requests.get(BASE_URL.format(f"/participants/{incompleted_participants_tashkent[i]}"), headers=HEADERS)
-                time.sleep(0.5)
-                response_logtime = requests.get(BASE_URL.format(f"/participants/{incompleted_participants_tashkent[i]}/logtime?date={date_to_use}"), headers=HEADERS)
-
-                if response_logtime.status_code == 200 and response_basic_info.status_code == 200:
-                    logtime = float(response_logtime.text)
-
-
-                    response_basic_info_json = json.loads(response_basic_info.text)
-                    level = response_basic_info_json['level']
-                    exp_value = response_basic_info_json['expValue']
-                    exp_to_next_level = response_basic_info_json['expToNextLevel']
-
-                    db_path_tashkent
-                    # Update the database
-                    update_participant(db_path_tashkent, incompleted_participants_tashkent[i], logtime=logtime, level=level, exp=exp_value, exp_to_next_level=exp_to_next_level)
-                    print(f"Student {incompleted_participants_tashkent[i]} has been updated in Tashkent")
-                    if i > 0:
-                        set_last_parced_student(db_path_tashkent, incompleted_participants_tashkent[i - 1], 0)
-                    
-                    set_last_parced_student(db_path_tashkent, incompleted_participants_tashkent[i], 1)
-                    print(f'{incompleted_participants_tashkent[i]}, {logtime}, {level}, {exp_value}, {exp_to_next_level}')
-
-                    time.sleep(1)
-
-            incompleted_participants_samarkand = get_incompleted_participants("samarkand")
-
-            if not incompleted_participants_samarkand:
-                incompleted_participants_samarkand = samarkand_students_usernames
-
-
-            db_path_samarkand = f"data_{intensive_month_selected}/participants/samarkand/participants.db"
-            last_parced_student = get_last_parced_student(db_path_samarkand)
-
-            if last_parced_student and last_parced_student in incompleted_participants_samarkand:  
-                index = incompleted_participants_samarkand.index(last_parced_student)
-                incompleted_participants_samarkand = incompleted_participants_samarkand[index:]
-
-            print("Parsing participants info in Samarkand")
-            for i in range(len(incompleted_participants_samarkand)):  
-                response_basic_info = requests.get(BASE_URL.format(f"/participants/{incompleted_participants_samarkand[i]}"), headers=HEADERS)
-                time.sleep(0.5)
-                response_logtime = requests.get(BASE_URL.format(f"/participants/{incompleted_participants_samarkand[i]}/logtime?date={date_to_use}"), headers=HEADERS)
-
-                if response_logtime.status_code == 200 and response_basic_info.status_code == 200:
-                    logtime = float(response_logtime.text)
-
-                    response_basic_info_json = json.loads(response_basic_info.text)
-                    level = response_basic_info_json['level']
-                    exp_value = response_basic_info_json['expValue']
-                    exp_to_next_level = response_basic_info_json['expToNextLevel']
-
-                    # Update the database
-                    update_participant(db_path_samarkand, incompleted_participants_samarkand[i], logtime=logtime, level=level, exp=exp_value, exp_to_next_level=exp_to_next_level)
-                    print(f"Student {incompleted_participants_tashkent[i]} has been updated in Samarkand")
-                    if i > 0:
-                        set_last_parced_student(db_path_samarkand, incompleted_participants_samarkand[i - 1], 0)
-
-                    set_last_parced_student(db_path_samarkand, incompleted_participants_samarkand[i], 1)
-                    print(f'{incompleted_participants_samarkand[i]}, {logtime}, {level}, {exp_value}, {exp_to_next_level}')
-
-                    time.sleep(1)
-            
-            last_parced_student = get_last_parced_student(db_path_tashkent)
-            if last_parced_student == incompleted_participants_tashkent[-1]:
-                set_last_parced_student(db_path_tashkent, last_parced_student, 0)
-            
-            last_parced_student = get_last_parced_student(db_path_samarkand)
-            if last_parced_student == incompleted_participants_samarkand[-1]:
-                set_last_parced_student(db_path_samarkand, last_parced_student, 0)
-            
-
-        except Exception as e:
-            raise Exception(f"There was a problem during parsing from the api {e}")
+        date_to_use = max(datetime.date.today() - datetime.timedelta(weeks=1), datetime.date(2025, 1, 27))
+        tashkent_students = fetch_students(f"data_{intensive_month_selected}/participants/tashkent/intensiv_participants.csv")
+        samarkand_students = fetch_students(f"data_{intensive_month_selected}/participants/samarkand/intensiv_participants.csv")
+        update_students("tashkent", tashkent_students)
+        update_students("samarkand", samarkand_students)
         
 
 def parse_personal_stats(access_token, intensive_month_selected):
-    HEADERS = {
-        'Authorization': 'Bearer {}'.format(access_token),
-    }
+    HEADERS = {'Authorization': f'Bearer {access_token}'}
+
+    def fetch_students(file_path):
+        with open(file_path, 'r') as file:
+            return [line.strip() for line in file.readlines()[1:]]
+
+    def update_stats(campus, students):
+        db_path = f"data_{intensive_month_selected}/participants/{campus}/personal_stats.db"
+        last_parced = get_last_parced_student_personal_stats(db_path)
+        if last_parced in students:
+            students = students[students.index(last_parced):]
+
+        for i, student in enumerate(students):
+            response_basic_info = requests.get(BASE_URL.format(f"/participants/{student}"), headers=HEADERS)
+            response_accepted_projects = requests.get(BASE_URL.format(f"/participants/{student}/projects?limit=50&offset=0&status=ACCEPTED"), headers=HEADERS)
+            response_logtime = requests.get(BASE_URL.format(f"/participants/{student}/logtime?date={date_to_use}"), headers=HEADERS)
+            response_badges = requests.get(BASE_URL.format(f"/participants/{student}/badges"), headers=HEADERS)
+
+            if all(response.status_code == 200 for response in [response_basic_info, response_accepted_projects, response_logtime, response_badges]):
+                info = response_basic_info.json()
+                logtime = float(response_logtime.text)
+                total_num_projects_accepted = len(response_accepted_projects.json()["projects"])
+                badges = response_badges.json()["badges"]
+                educational_events = len([badge for badge in badges if badge["name"] == "Educational event"])
+                entertainment_events = len([badge for badge in badges if badge["name"] == "Entertainment event"])
+                total_num_events = educational_events + entertainment_events
+
+                update_personal_stats(campus, db_path, student, logtime, info['expValue'], total_num_projects_accepted, educational_events, entertainment_events, total_num_events)
+                set_last_parced_student_personal_stats(campus, db_path, student, 1)
+                if i > 0:
+                    set_last_parced_student_personal_stats(campus, db_path, students[i - 1], 0)
+                print(f"{student}, {logtime}, {info['expValue']}, {total_num_projects_accepted}, {educational_events}, {entertainment_events}, {total_num_events}")
+                time.sleep(1)
 
     if os.path.exists(f"data_{intensive_month_selected}/participants/tashkent/intensiv_participants.csv") and os.path.exists(f"data_{intensive_month_selected}/participants/samarkand/intensiv_participants.csv"):
-        students_tashkent = list()
-        with open(f"data_{intensive_month_selected}/participants/tashkent/intensiv_participants.csv", 'r') as file_tashkent:
-            student = file_tashkent.readline()
-            while student:
-                student = file_tashkent.readline()
-                students_tashkent.append(student.strip())
-
-        new_students_tashkent = students_tashkent[:len(students_tashkent) - 1]
-        tashkent_students_usernames = [student.strip() for student in new_students_tashkent]
-        populate_personal_stats("tashkent", f"data_{intensive_month_selected}/participants/tashkent/personal_stats.db",  tashkent_students_usernames)
-
-        students_samarkand = list()
-        with open(f"data_{intensive_month_selected}/participants/samarkand/intensiv_participants.csv", 'r') as file_samarkand:
-            student = file_samarkand.readline()
-            while student:
-                student = file_samarkand.readline()
-                students_samarkand.append(student.strip())
-
-        new_students_samarkand = students_samarkand[:len(students_samarkand) - 1]
-        samarkand_students_usernames = [student.strip() for student in new_students_samarkand]
-        populate_personal_stats("samarkand", f"data_{intensive_month_selected}/participants/samarkand/personal_stats.db",  samarkand_students_usernames)
-
-        try:
-            intensive_start_date = datetime.date(2025, 1, 27)
-            today = datetime.date.today()
-            one_week_ago = today - datetime.timedelta(weeks=1)
-            date_to_use = one_week_ago if one_week_ago - datetime.timedelta(weeks=1) > intensive_start_date else intensive_start_date
-
-            active_participants_tashkent = get_active_student_list(f"data_{intensive_month_selected}/participants/tashkent/participants.db")
-
-            if not active_participants_tashkent:
-                active_participants_tashkent = tashkent_students_usernames
-
-            db_path_tashkent = f"data_{intensive_month_selected}/participants/tashkent/personal_stats.db"
-            last_parced_student = get_last_parced_student_personal_stats(db_path_tashkent)
-
-            if last_parced_student and last_parced_student in active_participants_tashkent:  
-                index = active_participants_tashkent.index(last_parced_student)
-                active_participants_tashkent = active_participants_tashkent[index:]
-
-            for i in range(len(active_participants_tashkent)): 
-                response_basic_info = requests.get(BASE_URL.format(f"/participants/{active_participants_tashkent[i]}"), headers=HEADERS) 
-                time.sleep(0.5)
-                response_accepted_projects = requests.get(BASE_URL.format(f"/participants/{active_participants_tashkent[i]}/projects?limit=50&offset=0&status=ACCEPTED"), headers=HEADERS)
-                time.sleep(0.5)
-                response_logtime = requests.get(BASE_URL.format(f"/participants/{active_participants_tashkent[i]}/logtime?date={date_to_use}"), headers=HEADERS)
-                time.sleep(0.5)
-                response_badges = requests.get(BASE_URL.format(f"/participants/{active_participants_tashkent[i]}/badges"), headers=HEADERS)
-
-
-                if response_basic_info.status_code == 200 and response_logtime.status_code == 200 and response_accepted_projects.status_code == 200 and response_badges.status_code == 200:
-                    response_basic_info_json = json.loads(response_basic_info.text)
-                    exp_value = response_basic_info_json['expValue']
-
-                    logtime = float(response_logtime.text)
-
-                    response_accepted_projects_json = json.loads(response_accepted_projects.text)
-                    total_num_projects_accepted = len(response_accepted_projects_json["projects"])
-
-                    response_badges_json = json.loads(response_badges.text)
-                    educational_events = len([badge for badge in response_badges_json["badges"] if badge["name"] == "Educational event"])
-                    entertainment_events = len([badge for badge in response_badges_json["badges"] if badge["name"] == "Entertainment event"])
-                    total_num_events = educational_events + entertainment_events
-
-                    update_personal_stats(campus="tashkent", db_path=f"data_{intensive_month_selected}/participants/tashkent/personal_stats.db", student=active_participants_tashkent[i], logtime=logtime, exp=exp_value, total_tasks_accepted=total_num_projects_accepted, educational_events=educational_events, entertainment=entertainment_events, total_number_events=total_num_events)
-                    if i > 0:
-                        set_last_parced_student_personal_stats("tashkent", f"data_{intensive_month_selected}/participants/tashkent/personal_stats.db", active_participants_tashkent[i - 1], 0)
-                        
-                    set_last_parced_student_personal_stats("tashkent", f"data_{intensive_month_selected}/participants/samarkand/personal_stats.db", active_participants_tashkent[i], 1)
-                    print(f"{active_participants_tashkent[i]}, {logtime}, {exp_value}, {total_num_projects_accepted}, {educational_events}, {entertainment_events}, {total_num_events}")
-
-                    time.sleep(1)
-
-
-            active_participants_samarkand = get_active_student_list(f"data_{intensive_month_selected}/participants/samarkand/participants.db")
-
-            if not active_participants_samarkand:
-                active_participants_samarkand = samarkand_students_usernames
-
-            db_path_samarkand = f"data_{intensive_month_selected}/participants/samarkand/personal_stats.db"
-            last_parced_student = get_last_parced_student_personal_stats(db_path_samarkand)
-
-            if last_parced_student and last_parced_student in active_participants_samarkand:  
-                index = active_participants_samarkand.index(last_parced_student)
-                active_participants_samarkand = active_participants_samarkand[index:]
-
-            for i in range(len(active_participants_samarkand)): 
-                response_basic_info = requests.get(BASE_URL.format(f"/participants/{active_participants_samarkand[i]}"), headers=HEADERS) 
-                time.sleep(0.5)
-                response_accepted_projects = requests.get(BASE_URL.format(f"/participants/{active_participants_samarkand[i]}/projects?limit=50&offset=0&status=ACCEPTED"), headers=HEADERS)
-                time.sleep(0.5)
-                response_logtime = requests.get(BASE_URL.format(f"/participants/{active_participants_samarkand[i]}/logtime?date={date_to_use}"), headers=HEADERS)
-                time.sleep(0.5)
-                response_badges = requests.get(BASE_URL.format(f"/participants/{active_participants_samarkand[i]}/badges"), headers=HEADERS)
-
-
-                if response_basic_info.status_code == 200 and response_logtime.status_code == 200 and response_accepted_projects.status_code == 200 and response_badges.status_code == 200:
-                    response_basic_info_json = json.loads(response_basic_info.text)
-                    exp_value = response_basic_info_json['expValue']
-
-                    logtime = float(response_logtime.text)
-
-                    response_accepted_projects_json = json.loads(response_accepted_projects.text)
-                    total_num_projects_accepted = len(response_accepted_projects_json["projects"])
-
-                    response_badges_json = json.loads(response_badges.text)
-                    educational_events = len([badge for badge in response_badges_json["badges"] if badge["name"] == "Educational event"])
-                    entertainment_events = len([badge for badge in response_badges_json["badges"] if badge["name"] == "Entertainment event"])
-                    total_num_events = educational_events + entertainment_events
-
-                    update_personal_stats(campus="samarkand", db_path=f"data_{intensive_month_selected}/participants/samarkand/personal_stats.db", student=active_participants_samarkand[i], logtime=logtime, exp=exp_value, total_tasks_accepted=total_num_projects_accepted, educational_events=educational_events, entertainment=entertainment_events, total_number_events=total_num_events)
-                    if i > 0:
-                        set_last_parced_student_personal_stats("samarkand", f"data_{intensive_month_selected}/participants/samarkand/personal_stats.db", active_participants_samarkand[i - 1], 0)
-
-                    set_last_parced_student_personal_stats("samarkand", f"data_{intensive_month_selected}/participants/samarkand/personal_stats.db", active_participants_samarkand[i], 1)
-                    print(f"{active_participants_samarkand[i]}, {logtime}, {exp_value}, {total_num_projects_accepted}, {educational_events}, {entertainment_events}, {total_num_events}")
-
-                    time.sleep(1)
-
-            set_all_last_parced("tashkent")
-            set_all_last_parced("samarkand")
-            
-        except Exception as e:
-            raise Exception(f"There was a problem during parsing from the api {e}")
+        date_to_use = max(datetime.date.today() - datetime.timedelta(weeks=1), datetime.date(2025, 1, 27))
+        tashkent_students = fetch_students(f"data_{intensive_month_selected}/participants/tashkent/intensiv_participants.csv")
+        samarkand_students = fetch_students(f"data_{intensive_month_selected}/participants/samarkand/intensiv_participants.csv")
+        update_stats("tashkent", tashkent_students)
+        update_stats("samarkand", samarkand_students)
 
 
 
 def update_read_databases():
-    # UPDATING PARTICIPANTS 
-    students_tashkent = get_all_participants_for_overall(f"data_{intensive_month_selected}/participants/tashkent/participants.db")
-    students_samarkand = get_all_participants_for_overall(f"data_{intensive_month_selected}/participants/samarkand/participants.db")
+    def update_participants(campus):
+        students = get_all_participants_for_overall(f"data_{intensive_month_selected}/participants/{campus}/participants.db")
+        set_being_updated(f"data_{intensive_month_selected}/participants_to_read/overall.db", campus, 1)
+        for student in students:
+            update_participant(
+                db_path=f"data_{intensive_month_selected}/participants_to_read/{campus}/participants.db",
+                student=student[0], logtime=student[1], level=student[2], exp=student[3], exp_to_next_level=student[4]
+            )
+            print(f"The student {student[0]} has been updated in participants in {campus.capitalize()}")
+        set_being_updated(f"data_{intensive_month_selected}/participants_to_read/overall.db", campus, 0)
+
+    def update_personal_stats_db(campus):
+        stats = get_all_personal_stats_for_overall(f"data_{intensive_month_selected}/participants/{campus}/personal_stats.db")
+        set_being_updated(f"data_{intensive_month_selected}/participants_to_read/overall.db", campus, 1)
+        for student in stats:
+            update_personal_stats(
+                campus=campus,
+                db_path=f"data_{intensive_month_selected}/participants_to_read/{campus}/personal_stats.db",
+                student=student[0], logtime=student[1], exp=student[2], total_tasks_accepted=student[3],
+                educational_events=student[4], entertainment=student[5], total_number_events=student[6]
+            )
+            print(f"The student {student[0]} has been updated in personal_stats in {campus.capitalize()}")
+        set_being_updated(f"data_{intensive_month_selected}/participants_to_read/overall.db", campus, 0)
+
+    for campus in ["tashkent", "samarkand"]:
+        update_participants(campus)
+        update_personal_stats_db(campus)
 
 
-    #set being updated 1 for tashkent
-    set_being_updated(f"data_{intensive_month_selected}/participants_to_read/overall.db", "tashkent", 1)
-    for student in students_tashkent:
-        username = student[0]
-        logtime = student[1]
-        level = student[2]
-        exp = student[3]
-        exp_to_next_level = student[4]
-
-        update_participant(db_path=f"data_{intensive_month_selected}/participants_to_read/tashkent/participants.db", student=username, logtime=logtime, level=level, exp=exp, exp_to_next_level=exp_to_next_level)
-        print(f"The student {username} has been updated in particiapants in Tashkent")
-    
-    set_being_updated(f"data_{intensive_month_selected}/participants_to_read/overall.db", "tashkent", 0)
-
-    #set being updated 1 for samarkand
-    set_being_updated(f"data_{intensive_month_selected}/participants_to_read/overall.db", "samarkand", 1)
-    for student in students_samarkand:
-        username = student[0]
-        logtime = student[1]
-        level = student[2]
-        exp = student[3]
-        exp_to_next_level = student[4]
-
-        update_participant(db_path=f"data_{intensive_month_selected}/participants_to_read/samarkand/participants.db", student=username, logtime=logtime, level=level, exp=exp, exp_to_next_level=exp_to_next_level)
-        print(f"The student {username} has been updated in participants in Tashkent")
-    
-    set_being_updated(f"data_{intensive_month_selected}/participants_to_read/overall.db", "samarkand", 0)
-
-    # UPDATING PERSONAL STATS 
-
-    personal_stats_tashkent = get_all_personal_stats_for_overall(f"data_{intensive_month_selected}/participants/tashkent/personal_stats.db")
-    personal_stats_samarkand = get_all_personal_stats_for_overall(f"data_{intensive_month_selected}/participants/samarkand/personal_stats.db")
-
-    set_being_updated(f"data_{intensive_month_selected}/participants_to_read/overall.db", "tashkent", 1)
-    for student in personal_stats_tashkent:
-        username = student[0]
-        logtime = student[1]
-        exp = student[2]
-        total_tasks_accepted = student[3]
-        educational_events = student[4]
-        entertainment = student[5]
-        total_number_events = student[6]
-
-        update_personal_stats(campus="tashkent", db_path=f"data_{intensive_month_selected}/participants_to_read/tashkent/personal_stats.db", student=username, logtime=logtime, exp=exp, total_tasks_accepted=total_tasks_accepted, educational_events=educational_events, entertainment=entertainment, total_number_events=total_number_events)
-        print(f"The student {username} has been updated in personal_stats in Tashkent")
-    
-    set_being_updated(f"data_{intensive_month_selected}/participants_to_read/overall.db", "tashkent", 0)
-
-
-
-    #set being updated 1 for samarkand
-    set_being_updated(f"data_{intensive_month_selected}/participants_to_read/overall.db", "samarkand", 1)
-    for student in personal_stats_samarkand:
-        username = student[0]
-        logtime = student[1]
-        exp = student[2]
-        total_tasks_accepted = student[3]
-        educational_events = student[4]
-        entertainment = student[5]
-        total_number_events = student[6]
-
-        update_personal_stats(campus="samarkand", db_path=f"data_{intensive_month_selected}/participants_to_read/samarkand/personal_stats.db", student=username, logtime=logtime, exp=exp, total_tasks_accepted=total_tasks_accepted, educational_events=educational_events, entertainment=entertainment, total_number_events=total_number_events)
-        print(f"The student {username} has been updated in personal_stats in Samarkand")
-    
-    set_being_updated(f"data_{intensive_month_selected}/participants_to_read/overall.db", "samarkand", 0)
-
-
-
-def plot_exam_progress(campus):
+def plot_exam_progress(campus, intensive_month_selected):
     db_path = f"data_{intensive_month_selected}/tasks/{campus}/exams_progress.db"
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
-    cursor.execute("SELECT student_username, E01D05, E02D12, E03D19 FROM exams_progress")
+    cursor.execute("SELECT student_username, E01D05, E02D12, E03D19, E04D26 FROM exams_progress")
     data = cursor.fetchall()
 
     conn.close()
@@ -655,28 +298,26 @@ def plot_exam_progress(campus):
     most_progress_students = []
     biggest_fall_students = []
 
-    for student, e01d05, e02d12, e03d19 in data:
-        scores = [e01d05, e02d12, e03d19]
+    for student, e01d05, e02d12, e03d19, e04d26 in data:
+        scores = [e01d05, e02d12, e03d19, e04d26]
         if None in scores:
             continue
 
-        # Calculate differences
-        progress = e03d19 - e01d05
-        fall = e01d05 - e03d19
+        progress = e04d26 - e01d05
+        fall = e01d05 - e04d26
         instability = max(scores) - min(scores)
 
         unstable_students.append((student, instability, scores))
         most_progress_students.append((student, progress, scores))
         biggest_fall_students.append((student, fall, scores))
 
-    # Sort and select top 5 students for each category
-    unstable_students = sorted(unstable_students, key=lambda x: x[1], reverse=True)[:10]
-    most_progress_students = sorted(most_progress_students, key=lambda x: x[1], reverse=True)[:10]
-    biggest_fall_students = sorted(biggest_fall_students, key=lambda x: x[1], reverse=True)[:10]
+    unstable_students = sorted(unstable_students, key=lambda x: x[1], reverse=True)[:5]
+    most_progress_students = sorted(most_progress_students, key=lambda x: x[1], reverse=True)[:5]
+    biggest_fall_students = sorted(biggest_fall_students, key=lambda x: x[1], reverse=True)[:5]
 
     def plot_students(students, title, filename):
         for student, _, scores in students:
-            exams = ["E01D05", "E02D12", "E03D19"]
+            exams = ["E01D05", "E02D12", "E03D19", "E04D26"]
             plt.plot(exams, scores, marker='o', label=student)
 
         plt.xlabel('Exams')
@@ -696,58 +337,138 @@ def plot_exam_progress(campus):
 
 def update_posts_db(task, intensive_month_selected):
     campuses = ["tashkent", "samarkand"]
-
     task_id, _ = INTENSIVE[task]
+
+    titles = {
+        'english': {
+            'passed': "List of students who passed the project:",
+            'hundred': "List of students who scored 100%:",
+            'didnt_pass': "List of students who didn't pass the project:",
+            'in_progress': "List of students working on the project:",
+            'in_reviews': "List of students waiting for review:",
+            'registered': "List of registered students:"
+        },
+        'russian': {
+            'passed': "Список учеников, сдавших проект:",
+            'hundred': "Список учеников, набравших 100%:",
+            'didnt_pass': "Список учеников, не сдавших проект:",
+            'in_progress': "Список учеников, выполняющих проект:",
+            'in_reviews': "Список учеников, ожидающих проверку:",
+            'registered': "Список зарегистрированных учеников:"
+        },
+        'uzbek': {
+            'passed': "Loyiha topshirgan talabalar ro'yxati:",
+            'hundred': "100% ball olgan talabalar ro'yxati:",
+            'didnt_pass': "Loyiha topshirmagan talabalar ro'yxati:",
+            'in_progress': "Loyiha ustida ishlayotgan talabalar ro'yxati:",
+            'in_reviews': "Tekshiruvni kutayotgan talabalar ro'yxati:",
+            'registered': "Ro'yxatdan o'tgan talabalar ro'yxati:"
+        }
+    }
 
     for campus in campuses:
         report = make_report(task, "russian", campus, f"data_{intensive_month_selected}/tasks.db", 1)
-        result = [report['report']]
-
         for language in ["russian", "english", "uzbek"]:
             for report_type in ['passed', 'hundred', 'scored_didnt_pass', 'in_progress', 'in_reviews', 'registered']:
                 students = report.get(f'scored_{report_type}' if report_type != 'passed' else 'passed_students')
-
                 if students:
+                    campus_language_specified = "Ташкент" if campus == "tashkent" and language == "russian" else campus.capitalize()
+                    post_url = create_telegraph_post(
+                        TELEGRAPH_TOKEN, f"{titles[language][report_type]} ({task}) {campus_language_specified}",
+                        make_content(students, task_id, language))['result']['url']
+                    create_post(task, post_url, f'url_{report_type}_{language}_{campus}')
+                    time.sleep(1)
 
-                    for lang in ['english', 'russian', 'uzbek']:
-                        titles = {
-                            'english': {
-                                'passed': "List of students who passed the project:",
-                                'hundred': "List of students who scored 100%:",
-                                'didnt_pass': "List of students who didn't pass the project:",
-                                'in_progress': "List of students working on the project:",
-                                'in_reviews': "List of students waiting for review:",
-                                'registered': "List of registered students:"
-                            },
-                            'russian': {
-                                'passed': "Список учеников, сдавших проект:",
-                                'hundred': "Список учеников, набравших 100%:",
-                                'didnt_pass': "Список учеников, не сдавших проект:",
-                                'in_progress': "Список учеников, выполняющих проект:",
-                                'in_reviews': "Список учеников, ожидающих проверку:",
-                                'registered': "Список зарегистрированных учеников:"
-                            },
-                            'uzbek': {
-                                'passed': "Loyiha topshirgan talabalar ro'yxati:",
-                                'hundred': "100% ball olgan talabalar ro'yxati:",
-                                'didnt_pass': "Loyiha topshirmagan talabalar ro'yxati:",
-                                'in_progress': "Loyiha ustida ishlayotgan talabalar ro'yxati:",
-                                'in_reviews': "Tekshiruvni kutayotgan talabalar ro'yxati:",
-                                'registered': "Ro'yxatdan o'tgan talabalar ro'yxati:"
-                            }
-                        }
 
-                        if language == "russian": 
-                                campus_language_specified = "Ташкент" if campus == "tashkent" else "Самарканд"
-                        else:
-                            campus_language_specified = campus.capitalize()
 
-                            post_url = create_telegraph_post(
-                                TELEGRAPH_TOKEN, f"{titles[lang][report_type]} ({task}) {campus_language_specified.capitalize()}",
-                                make_content(students, task_id, lang))['result']['url']
-                            create_post(task, post_url, f'url_{report_type}_{lang}_{campus}')
-                            time.sleep(1)
+def get_needed_data_stats(campus, intensive_month_selected):
+    db_path = f"data_{intensive_month_selected}/participants/{campus}/personal_stats.db"
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
 
+    queries = {
+        "count_zero_educational_events": "SELECT COUNT(*) FROM personal_stats WHERE educational_events = 0 AND logtime > 0",
+        "count_zero_to_five_educational_events": "SELECT COUNT(*) FROM personal_stats WHERE educational_events > 0 AND educational_events <= 5 AND logtime > 0",
+        "count_five_to_ten_educational_events": "SELECT COUNT(*) FROM personal_stats WHERE educational_events > 5 AND educational_events <= 10 AND logtime > 0",
+        "count_more_than_ten_educational_events": "SELECT COUNT(*) FROM personal_stats WHERE educational_events > 10 AND logtime > 0",
+        "count_zero_entertainment_events": "SELECT COUNT(*) FROM personal_stats WHERE entertainment = 0 AND logtime > 0",
+        "count_zero_to_five_entertainment_events": "SELECT COUNT(*) FROM personal_stats WHERE entertainment > 0 AND entertainment <= 5 AND logtime > 0",
+        "count_five_to_ten_entertainment_events": "SELECT COUNT(*) FROM personal_stats WHERE entertainment > 5 AND entertainment <= 10 AND logtime > 0",
+        "count_more_than_ten_entertainment_events": "SELECT COUNT(*) FROM personal_stats WHERE entertainment > 10 AND logtime > 0",
+        "average_total_events": "SELECT AVG(total_number_events) FROM personal_stats WHERE logtime > 0",
+        "count_zero_events": "SELECT COUNT(*) FROM personal_stats WHERE total_number_events = 0 AND logtime > 0",
+        "count_zero_to_five_events": "SELECT COUNT(*) FROM personal_stats WHERE total_number_events > 0 AND total_number_events <= 5 AND logtime > 0",
+        "count_five_to_ten_events": "SELECT COUNT(*) FROM personal_stats WHERE total_number_events > 5 AND total_number_events <= 10 AND logtime > 0",
+        "count_more_than_ten_events": "SELECT COUNT(*) FROM personal_stats WHERE total_number_events > 10 AND logtime > 0",
+        "count_zero_tasks": "SELECT COUNT(*) FROM personal_stats WHERE total_tasks_accepted = 0 AND logtime > 0",
+        "count_zero_to_five_tasks": "SELECT COUNT(*) FROM personal_stats WHERE total_tasks_accepted > 0 AND total_tasks_accepted <= 5 AND logtime > 0",
+        "count_more_than_ten_tasks": "SELECT COUNT(*) FROM personal_stats WHERE total_tasks_accepted > 10 AND logtime > 0",
+        "count_zero_to_five_logtime": "SELECT COUNT(*) FROM personal_stats WHERE logtime > 0 AND logtime <= 5",
+        "count_five_to_ten_logtime": "SELECT COUNT(*) FROM personal_stats WHERE logtime > 5 AND logtime <= 10",
+        "count_more_than_ten_logtime": "SELECT COUNT(*) FROM personal_stats WHERE logtime > 10"
+    }
+
+    results = {key: cursor.execute(query).fetchone()[0] for key, query in queries.items()}
+    conn.close()
+
+
+    def plot_pie_chart(data, labels, title, filename):
+        plt.figure(figsize=(8, 8))
+        plt.pie(data, labels=labels, autopct='%1.1f%%', startangle=140)
+        plt.title(title)
+        plt.axis('equal')
+        plt.savefig(f"data_{intensive_month_selected}/images/{filename}.png")
+        plt.clf()
+
+
+    educational_events_data = [
+        results["count_zero_educational_events"],
+        results["count_zero_to_five_educational_events"],
+        results["count_five_to_ten_educational_events"],
+        results["count_more_than_ten_educational_events"]
+    ]
+    educational_events_labels = ["0 events", "1-5 events", "6-10 events", ">10 events"]
+    plot_pie_chart(educational_events_data, educational_events_labels, f"{campus.capitalize()} Educational Events", f"{campus}_educational_events")
+
+
+    entertainment_events_data = [
+        results["count_zero_entertainment_events"],
+        results["count_zero_to_five_entertainment_events"],
+        results["count_five_to_ten_entertainment_events"],
+        results["count_more_than_ten_entertainment_events"]
+    ]
+    entertainment_events_labels = ["0 events", "1-5 events", "6-10 events", ">10 events"]
+    plot_pie_chart(entertainment_events_data, entertainment_events_labels, f"{campus.capitalize()} Entertainment Events", f"{campus}_entertainment_events")
+
+
+    total_events_data = [
+        results["count_zero_events"],
+        results["count_zero_to_five_events"],
+        results["count_five_to_ten_events"],
+        results["count_more_than_ten_events"]
+    ]
+    total_events_labels = ["0 events", "1-5 events", "6-10 events", ">10 events"]
+    plot_pie_chart(total_events_data, total_events_labels, f"{campus.capitalize()} Total Events", f"{campus}_total_events")
+
+
+    total_tasks_data = [
+        results["count_zero_tasks"],
+        results["count_zero_to_five_tasks"],
+        results["count_more_than_ten_tasks"]
+    ]
+    total_tasks_labels = ["0 tasks", "1-5 tasks", ">10 tasks"]
+    plot_pie_chart(total_tasks_data, total_tasks_labels, f"{campus.capitalize()} Total Tasks", f"{campus}_total_tasks")
+
+
+    logtime_data = [
+        results["count_zero_to_five_logtime"],
+        results["count_five_to_ten_logtime"],
+        results["count_more_than_ten_logtime"]
+    ]
+    logtime_labels = ["0-5 hours", "6-10 hours", ">10 hours"]
+    plot_pie_chart(logtime_data, logtime_labels, f"{campus.capitalize()} Logtime", f"{campus}_logtime")
+
+    return results
 
 
 
@@ -766,12 +487,25 @@ def main():
             parse_personal_stats(token, intensive_month_selected)
             update_read_databases()
 
+        elif sys.argv[1] == "sum_up":
+            stats_tashkent = get_needed_data_stats("tashkent", intensive_month_selected)
+            stats_samarkand = get_needed_data_stats("samarkand", intensive_month_selected)
+
+            print("Tashkent Stats:")
+            for key, value in stats_tashkent.items():
+                print(f"{key}: {value}\n")
+
+            print("\n\nSamarkand Stats:")
+            for key, value in stats_samarkand.items():
+                print(f"{key}: {value}\n")
+
+
         elif sys.argv[1] == "parse_exam_progress":
         
             sort_students_exam_progress(f"data_{intensive_month_selected}/participants/tashkent/participants.db", "tashkent")
             sort_students_exam_progress(f"data_{intensive_month_selected}/participants/samarkand/participants.db", "samarkand")
-            plot_exam_progress("tashkent")
-            plot_exam_progress("samarkand")
+            plot_exam_progress("tashkent", intensive_month_selected)
+            plot_exam_progress("samarkand", intensive_month_selected)
 
         if sys.argv[1] not in ("parse_students", "parse_exam_progress"):
             if sys.argv[1] not in INTENSIVE:
@@ -794,8 +528,8 @@ def main():
                 
 
             if not os.path.exists(f'data_{intensive_month_selected}/coalitions/tashkent/intensiv_coalitions.csv') or not os.path.exists(f'data_{intensive_month_selected}/coalitions/samarkand/intensiv_coalitions.csv') :
-                get_coatlitions_api(token, tashkent_id, 'tashkent')
-                get_coatlitions_api(token, samarkand_id, 'samarkand')
+                get_coalitions_api(token, tashkent_id, 'tashkent')
+                get_coalitions_api(token, samarkand_id, 'samarkand')
 
             if not os.path.exists(f'data_{intensive_month_selected}/participants/tashkent/intensiv_participants.csv') or not os.path.exists(f'data_{intensive_month_selected}/participants/samarkand/intensiv_participants.csv'):
                 get_all_intensiv_participants_api(token)

@@ -490,7 +490,7 @@ async def authorize_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
         raise KeyError(f"An error occurred\n{e}")
 
     if query.data == "authorize_user":
-        context.user_data.clear()  # Очистка предыдущих данных
+        context.user_data.clear()  
         context.user_data['auth_chat_id'] = update.effective_chat.id
 
         await query.edit_message_caption(caption=KEYBOARDS['authorize_user']['caption'][language])
@@ -502,7 +502,7 @@ async def authorize_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик текстового ввода (логин и пароль)"""
     if 'awaiting' not in context.user_data:
-        return  # Игнорируем текстовые сообщения без контекста
+        return  
 
     try:
         language = get_data(update.effective_chat.id, 'language')

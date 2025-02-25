@@ -761,11 +761,128 @@ def update_personal_stats(campus, db_path, student, logtime=None, exp=None, tota
             conn.close()
 
 
+def update_personal_stats_old_participants(campus, db_path, student, exp=None, logtime_first=None, logtime_second=None, logtime_third=None, logtime_fourth=None, total_tasks_accepted=None, educational_events=None, entertainment=None, total_number_events=None, last_parced=None):
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        updates = []
+        values = []
+
+        if logtime_first is not None:
+            updates.append("logtime_first = ?")
+            values.append(logtime_first)
+        if logtime_second is not None:
+            updates.append("logtime_second = ?")
+            values.append(logtime_second)
+        if logtime_third is not None:
+            updates.append("logtime_third = ?")
+            values.append(logtime_third)
+        if logtime_fourth is not None:
+            updates.append("logtime_fourth = ?")
+            values.append(logtime_fourth)
+            
+        if exp is not None:
+            updates.append("exp = ?")
+            values.append(exp)
+        if total_tasks_accepted is not None:
+            updates.append("total_tasks_accepted = ?")
+            values.append(total_tasks_accepted)
+        if educational_events is not None:
+            updates.append("educational_events = ?")
+            values.append(educational_events)
+        if entertainment is not None:
+            updates.append("entertainment = ?")
+            values.append(entertainment)
+        if total_number_events is not None:
+            updates.append("total_number_events = ?")
+            values.append(total_number_events)
+        if last_parced is not None:
+            updates.append("last_parced = ?")
+            values.append(last_parced)
+
+        if updates:
+            sql = f"UPDATE personal_stats SET {', '.join(updates)} WHERE student = ?"
+            values.append(student)
+            cursor.execute(sql, tuple(values))
+            conn.commit()
+            return cursor.rowcount > 0
+        else:
+            return False
+
+    except sqlite3.Error as e:
+        print(f"Error updating personal stats for campus {campus}: {e}")
+        conn.rollback()
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+
+
+def get_personal_stats_old_participants(campus, db_path, student):
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT exp, logtime_first, logtime_second, logtime_third, logtime_fourth, total_tasks_accepted, educational_events, entertainment, total_number_events, last_parced FROM personal_stats WHERE student = ?", (student,))
+        result = cursor.fetchone()
+        if result:
+            return {
+                "exp": result[0],
+                "logtime_first": result[1],
+                "logtime_second": result[2],
+                "logtime_third": result[3],
+                "logtime_fourth": result[4],
+                "total_tasks_accepted": result[5],
+                "educational_events": result[6],
+                "entertainment": result[7],
+                "total_number_events": result[8],
+                "last_parced": result[9]
+            }
+        else:
+            return None
+    except sqlite3.Error as e:
+        print(f"Error getting personal stats: {e}")
+        return None
+    finally:
+        if conn:
+            conn.close()
+
+
+def create_personal_stats_old_participants(campus, db_path, student, exp=0, logtime_first=0, logtime_second=0, logtime_third=0, logtime_fourth=0,total_tasks_accepted=0, educational_events=0, entertainment=0, total_number_events=0, last_parced=0):
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO personal_stats (student, exp, logtime_first, logtime_second, logtime_third, logtime_fourth, total_tasks_accepted, educational_events, entertainment, total_number_events, last_parced) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (student, exp, logtime_first, logtime_second, logtime_third, logtime_fourth, total_tasks_accepted, educational_events, entertainment, total_number_events, last_parced))
+        conn.commit()
+        print(f"Student {student} has been added to the database in campus {campus}")
+        return True
+    except sqlite3.Error as e:
+        print(f"Error creating personal stats for campus {campus}: {e}")
+        conn.rollback()
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+
 
 def populate_personal_stats(campus, db_path, students):
     for student in students:
         if not get_personal_stats(campus, db_path, student):
             create_personal_stats(campus, db_path, student)
+        else:
+            print(f"Student {student} already exists. Skipping")
+
+
+
+
+
+
+def populate_personal_stats_old_participants(campus, db_path, students):
+    for student in students:
+        if not get_personal_stats_old_participants(campus, db_path, student):
+            create_personal_stats_old_participants(campus, db_path, student)
         else:
             print(f"Student {student} already exists. Skipping")
 
