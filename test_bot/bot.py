@@ -11,6 +11,7 @@ from api_helper import *
 from encrypt import *
 from report_helpers.report_helper import _process_report_type, make_report, make_profile_report
 import random
+import re
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -46,8 +47,8 @@ async def language_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     query = update.callback_query
     await query.answer()
 
-    language = query.data.split('_')[1] #get the language without lang_
-    context.user_data["language"] = language #save the language in user_data
+    language = query.data.split('_')[1] 
+    context.user_data["language"] = language
 
     keyboard_countries = [
         [InlineKeyboardButton(country, callback_data=f'country_uzb')] for country in KEYBOARDS['language_selected']['keyboard'][language]
@@ -142,19 +143,28 @@ async def show_main_options(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     # Format the student part of the caption with Markdown link
     formatted_student = f"[{student}]({student_link})" #MarkdownV2 format
 
+    out_of_intensive = False if datetime.datetime.now() >= datetime.datetime(year=2025,month=3, day=3) else True
 
-    caption = KEYBOARDS['show_main_options']['caption'][language].format(
-        campus=campus_language_specified,
-        num_active_students=num_active_students,
-        num_students=num_students,
-        student=formatted_student, 
-        level=level,
-        exp=exp
-    )
-    keyboard = list()
+    if not out_of_intensive:
+        caption = KEYBOARDS['show_main_options']['caption_during_intensive'][language].format(
+            campus=campus_language_specified,
+            num_active_students=num_active_students,
+            num_students=num_students,
+            student=formatted_student, 
+            level=level,
+            exp=exp
+        )
+    else:
+        caption = KEYBOARDS['show_main_options']['caption_out_of_intensive'][language].format(
+            campus=campus_language_specified)
 
-    for item in KEYBOARDS['show_main_options']['keyboard'][language]:
-        keyboard.append([InlineKeyboardButton(item['text'], callback_data=item['callback_data'])])
+    keyboard = [[InlineKeyboardButton(text=item['text'], callback_data=item['callback_data'])] for item in KEYBOARDS['show_main_options']['keyboard'][language]]
+
+    if out_of_intensive:
+        keyboard.pop(1)
+        previous_intesives_button = keyboard.pop(-1)
+        keyboard.insert(1, previous_intesives_button)
+    
 
     reply_markup = InlineKeyboardMarkup(keyboard)
     context.user_data['previous_markup'] = reply_markup
@@ -578,6 +588,61 @@ async def show_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 reply_markup=reply_markup
             )
 
+async def show_previous_intensives(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    language, campus = await _get_user_language_and_campus(update, context)
+
+    if query.data == "previous_intensives":
+        keyboard = [
+            [InlineKeyboardButton(text=item['text'], callback_data=item['callback_data'])] for item in KEYBOARDS['show_previous_intensives']['keyboard_campuses'][language]
+        ]
+
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await query.edit_message_caption(caption=KEYBOARDS['show_previous_intensives']['text_campuses'][language], reply_markup=reply_markup)
+    
+    elif re.match(r"^show_previous_intensives_(tashkent|samarkand)$", query.data):
+        campus = query.data.split("_")[-1]
+
+        keyboard = [
+            [InlineKeyboardButton(text=item['text'], callback_data=item['callback_data'])] for item in KEYBOARDS['show_previous_intensives'][f'keyboard_intensives_{campus}'][language]
+        ]
+
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await query.edit_message_caption(caption="", reply_markup=reply_markup)
+
+
+    elif re.match(r"^show_previous_(tashkent|samarkand)_(september|november|february)_(2024|2025)$", query.data):
+        chosen_campus, chosen_intensive, chosen_year = query.data.split('_')[2:]
+
+        image_dir = f"../data_previous_intensives/{chosen_campus}/{chosen_intensive}_{chosen_year}/images"
+        caption_path = f"../data_previous_intensives/{chosen_campus}/{chosen_intensive}_{chosen_year}/report_{language}.txt"
+
+        media_group = []
+        try:
+            with open(caption_path, 'r', encoding='utf-8') as caption_file:
+                caption = caption_file.read()
+
+            for image_file in os.listdir(image_dir):
+                if image_file.endswith(('.png', '.jpg', '.jpeg')):
+                    media_group.append(InputMediaPhoto(media=open(os.path.join(image_dir, image_file), 'rb')))
+
+            keyboard = [InlineKeyboardButton(KEYBOARDS['button']['stats']['keyboard'][language][-1]['text'], callback_data='go_back')]
+
+            reply_markup = InlineKeyboardMarkup([keyboard])
+
+            await context.bot.delete_message(message_id=update.effective_message.id, chat_id=update.effective_chat.id)
+            await context.bot.send_media_group(chat_id=update.effective_chat.id, media=media_group)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=caption)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=f"{KEYBOARDS['button']['stats']['keyboard'][language][-1]['text']} ?", reply_markup=reply_markup)
+
+        except FileNotFoundError as e:
+            print(f"Error: {e}")
+
+
 
 
 def main():
@@ -602,10 +667,11 @@ def main():
     app.add_handler(CallbackQueryHandler(show_specific_task_info, pattern=r"^T\d{2}D\d{2}$|^E\d{2}D\d{2}$|^P\d{2}D\d{2}$"))
     app.add_handler(CallbackQueryHandler(show_other_campus_task_info, pattern=r"^show_other_campus_task_info"))
 
+    app.add_handler(CallbackQueryHandler(show_previous_intensives, pattern=r"^previous_intensives|show_previous_intensives_(tashkent|samarkand)|show_previous_(tashkent|samarkand)_(september|november|february)_(2024|2025)$"))
+
     app.add_handler(CallbackQueryHandler(show_profile, pattern=r"^profile"))
     app.add_handler(CallbackQueryHandler(authorize_user, pattern="^authorize_user$"))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
-
 
     app.run_polling()
 
