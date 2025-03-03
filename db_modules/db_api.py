@@ -1,4 +1,7 @@
-import os
+import sys
+
+sys.path.append("..")
+
 import sqlite3
 import datetime
 from configs.config_api import *
@@ -28,6 +31,7 @@ def _validate_task(task):
 
 
 def create_task(task, has_been_parsed, being_parsed, start_date, end_date):  # Include start and end dates
+    print(f"data_{intensive_month_selected}/tasks.db")
     conn = sqlite3.connect(f'data_{intensive_month_selected}/tasks.db')
     cursor = conn.cursor()
 
@@ -118,7 +122,7 @@ def update_task(db_path, task, has_been_parsed=None, being_parsed=None, start_da
 
 
 def populate_tasks():
-    start_date = datetime.date(2025, 1, 27)  # Initial start date
+    start_date = datetime.date(2025, 3, 3)  # Initial start date
 
     for task, (task_id, week) in INTENSIVE.items():
         has_been_parsed = 0
@@ -942,7 +946,9 @@ if __name__ == "__main__":
     # init_table_personal_stats("tashkent", "data/participants/tashkent/personal_stats.db")
     # init_table_personal_stats("samarkand", "data/participants/samarkand/personal_stats.db")
 
-    print(get_all_active_students_by_exp(f"data_{intensive_month_selected}/participants/tashkent/participants.db"))
+    populate_tasks()
+
+    # print(get_all_active_students_by_exp(f"data_{intensive_month_selected}/participants/tashkent/participants.db"))
 
     # init_table_participants("tashkent", "data/participants/tashkent/participants.db")
     # init_table_participants("samarkand", "data/participants/samarkand/participants.db")

@@ -571,22 +571,24 @@ async def show_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         image_path = f"../api/data_{intensive_month_selected}/images/{random.randint(1, 3)}.png"
 
-        try:
-            with open(image_path, "rb") as image_file:
-                await context.bot.send_photo(
-                    chat_id=update.effective_chat.id,
-                    photo=InputFile(image_file),
-                    caption=report,
-                    reply_markup=reply_markup
-                )
-                await context.bot.delete_message(update.effective_chat.id, update.effective_message.id)
-        except FileNotFoundError:
-            print.error(f"Image not found at path: {image_path}")
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text=report,
-                reply_markup=reply_markup
-            )
+        await query.edit_message_caption(caption=report, reply_markup=reply_markup)
+
+        # try:
+        #     with open(image_path, "rb") as image_file:
+        #         await context.bot.send_photo(
+        #             chat_id=update.effective_chat.id,
+        #             photo=InputFile(image_file),
+        #             caption=report,
+        #             reply_markup=reply_markup
+        #         )
+        #         await context.bot.delete_message(update.effective_chat.id, update.effective_message.id)
+        # except FileNotFoundError:
+        #     print.error(f"Image not found at path: {image_path}")
+        #     await context.bot.send_message(
+        #         chat_id=update.effective_chat.id,
+        #         text=report,
+        #         reply_markup=reply_markup
+        #     )
 
 async def show_previous_intensives(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query

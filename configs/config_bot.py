@@ -61,7 +61,7 @@ FOURTH_WEEK_INTENSIVE = {
     'E04D26 (exam)': 19459,
 }
 
-TOKEN = '8180010320:AAF7CF6M9BFeVnJu78XfAXpBvz6n7Nq786k' 
+TOKEN = '7863829907:AAFMlQ9InO33SsewY7UdxkGgeI-m3UUzDf8' 
 TELEGRAPH_TOKEN = 'b0994b00bcab357cdb5a579123e57c7484db31abe61e06d83775bb4abe6d'
 TOKEN_ADMIN_BOT = '7576903606:AAHWaZRnbmn4GWLEvZGnBU2mRYqn7G7rvc8'
 
@@ -105,14 +105,19 @@ KEYBOARDS = {
     },
     "show_main_options" : {
         "keyboard": {
-            "english": [{"text": "Profile", "callback_data" : "profile"}, {"text":"Task Statistics", "callback_data" : "stats"}, {"text": "Language", "callback_data": "change_language"}, {"text": "Campus", "callback_data": "change_campus"}],
-            "russian": [{"text": "Профиль", "callback_data" : "profile"}, {"text":"Статистика по заданиям", "callback_data" : "stats"}, {"text": "Язык", "callback_data": "change_language"}, {"text": "Кампус", "callback_data": "change_campus"}],
-            "uzbek": [{"text": "Profil", "callback_data" : "profile"}, {"text":"Topshiriqlar statistikasi", "callback_data" : "stats"}, {"text": "Til", "callback_data": "change_language"}, {"text": "Kampus", "callback_data": "change_campus"}]
+            "english": [{"text": "Profile", "callback_data" : "profile"}, {"text":"Task Statistics", "callback_data" : "stats"}, {"text": "Language", "callback_data": "change_language"}, {"text": "Campus", "callback_data": "change_campus"}, {"text": "Past Intensives", "callback_data": "previous_intensives"}],
+            "russian": [{"text": "Профиль", "callback_data" : "profile"}, {"text":"Статистика по заданиям", "callback_data" : "stats"}, {"text": "Язык", "callback_data": "change_language"}, {"text": "Кампус", "callback_data": "change_campus"}, {"text": "Прошлые интенсивы", "callback_data": "previous_intensives"}],
+            "uzbek": [{"text": "Profil", "callback_data" : "profile"}, {"text":"Topshiriqlar statistikasi", "callback_data" : "stats"}, {"text": "Til", "callback_data": "change_language"}, {"text": "Kampus", "callback_data": "change_campus"}, {"text": "O\'tgan intensivlar", "callback_data": "previous_intensives"}]
         },
-        "caption": {  
+        "caption_during_intensive": {  
             "english": "🏫 Campus: {campus}\n\n✅ Actively visiting the campus: {num_active_students} out of {num_students}\n\n🧑🏻‍🎓 Best student in the campus: {student} \( Level {level} \| {exp} exp \)\n\n If the buttons are not working, please enter /start",  
             "russian": "🏫 Кампус: {campus}\n\n✅ Активно посещают кампус: {num_active_students} из {num_students}\n\n🧑🏻‍🎓 Лучший студент в кампусе: {student} \( {level} уровень \| {exp} exp \)\n\nЕсли кнопки не жмуться введите /start", 
             "uzbek": "🏫 Kampus: {campus}\n\n✅ Kampusga faol tashrif buyuruvchilar: {num_students} dan {num_active_students}\n\n🧑🏻‍🎓 Kampusda eng yaxshi talaba: {student} \( {level} daraja \| {exp} tajriba \)\n\nAgar tugmalar ishlamasa\, iltimos\, /start kiriting" 
+        },
+        "caption_out_of_intensive": {
+            "english": "🏫 Campus: {campus}\n\n🙃The last intensive is over\. Waiting for the start of the new one\n\n🫠You can view reports on past intensives by clicking the \"Past Intensives\" button\n\nIf the buttons are not working, please enter /start",  
+            "russian": "🏫 Кампус: {campus}\n\n🙃Последний интенсив завершен\. Ждем начало нового интенсива\n\n🫠Пока вы можете посмотреть отчеты по прошлым интенсивам нажав на кнопку \"Прошлые интенсивы\"\n\nЕсли кнопки не жмуться введите /start", 
+            "uzbek": "🏫 Kampus: {campus}\n\n🙃Oxirgi intensiv tugadi\. Yangi intensiv boshlanishini kutyapmiz\n\n🫠Siz \"O\'tgan intensivlar\" tugmasini bosib, oldingi intensivlar bo\'yicha hisobotlarni ko\'rishingiz mumkin" 
         },
         "caption_unauthorized": {
             "english": "😃 For more information please authorize by clicking on \"Profile\" button\n",  
@@ -201,9 +206,29 @@ KEYBOARDS = {
             "uzbek": "Login yoki parol noto'g'ri! Qayta dan urinib ko'ring.",
         },
 
+    },
+    "show_previous_intensives": {
+        "text_campuses": {
+            "english": "Choose the campus",
+            "russian": "Выберите кампус",
+            "uzbek": "Kampusni tanlang",
+        },
+        "keyboard_campuses": {
+            "english": [{"text": "Tashkent", "callback_data": "show_previous_intensives_tashkent"}, {"text": "Samarkand", "callback_data": "show_previous_intensives_samarkand"}, {"text": "Go Back", "callback_data": "go_back"}],
+            "russian": [{"text": "Ташкент", "callback_data": "show_previous_intensives_tashkent"}, {"text": "Самарканд", "callback_data": "show_previous_intensives_samarkand"}, {"text": "Назад", "callback_data": "go_back"}],
+            "uzbek": [{"text": "Toshkent", "callback_data": "show_previous_intensives_tashkent"}, {"text": "Samarkand", "callback_data": "show_previous_intensives_samarkand"}, {"text": "Ortga", "callback_data": "go_back"}],
+        },
+        "keyboard_intensives_tashkent": {
+            "english": [{"text": "November 2024", "callback_data": "show_previous_tashkent_november_2024"}, {"text": "February 2025", "callback_data": "show_previous_tashkent_february_2025"}, {"text": "Go Back", "callback_data": "go_back"}],
+            "russian": [{"text": "Ноябрь 2024", "callback_data": "show_previous_tashkent_november_2024"}, {"text": "Февраль 2025", "callback_data": "show_previous_tashkent_february_2025"}, {"text": "Назад", "callback_data": "go_back"}],
+            "uzbek": [{"text": "Noyabr 2024", "callback_data": "show_previous_tashkent_november_2024"}, {"text": "Fevral 2025", "callback_data": "show_previous_tashkent_february_2025"}, {"text": "Ortga", "callback_data": "go_back"}],
+        },
+        "keyboard_intensives_samarkand": {
+            "english": [{"text": "February 2025", "callback_data": "show_previous_samarkand_february_2025"}, {"text": "Go Back", "callback_data": "go_back"}],
+            "russian": [{"text": "Февраль 2025", "callback_data": "show_previous_samarkand_february_2025"}, {"text": "Назад", "callback_data": "go_back"}],
+            "uzbek": [ {"text": "Fevral 2025", "callback_data": "show_previous_samarkand_february_2025"}, {"text": "Ortga", "callback_data": "go_back"}],
+        },
     }
-
-
 }
 
 

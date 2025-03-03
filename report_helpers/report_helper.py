@@ -139,9 +139,9 @@ def make_profile_report(language, campus, db_path, student):
 
     if result is None:  # Handle the case where the student is not found
         return {
-            "english": "❌ You are either a core participant or you have chosen the wrong campus ❌",
-            "russian": "❌ Вы либо участник основы, либо выбрали не свой кампус ❌",
-            "uzbek": "❌ Siz yoki asosiy ishtirokchisiz, yoki noto'g'ri kampusni tanlagansiz ❌"
+            "english": "❌ You are either not a intensive participant of the current intensive or you have chosen the wrong campus ❌",
+            "russian": "❌ Вы либо участник не участник текущего интенсива, либо выбрали не свой кампус ❌",
+            "uzbek": "❌ Siz yoki joriy intensiv ishtirokchisi emassiz, yoki o'z kampusizni tanlamadingiz ❌"
         }[language]
     
     if result == "being updated":

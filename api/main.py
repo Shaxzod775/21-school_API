@@ -340,7 +340,7 @@ def parse_student_info(access_token, intensive_month_selected):
 
 
         try:
-            intensive_start_date = datetime.date(2025, 1, 27)
+            intensive_start_date = datetime.date(2025, 3, 3)
             today = datetime.date.today()
             one_week_ago = today - datetime.timedelta(weeks=1)
             date_to_use = one_week_ago if one_week_ago - datetime.timedelta(weeks=1) > intensive_start_date else intensive_start_date
@@ -410,7 +410,6 @@ def parse_student_info(access_token, intensive_month_selected):
                     exp_value = response_basic_info_json['expValue']
                     exp_to_next_level = response_basic_info_json['expToNextLevel']
 
-                    # Update the database
                     update_participant(db_path_samarkand, incompleted_participants_samarkand[i], logtime=logtime, level=level, exp=exp_value, exp_to_next_level=exp_to_next_level)
                     print(f"Student {incompleted_participants_tashkent[i]} has been updated in Samarkand")
                     if i > 0:
@@ -463,7 +462,7 @@ def parse_personal_stats(access_token, intensive_month_selected):
         populate_personal_stats("samarkand", f"data_{intensive_month_selected}/participants/samarkand/personal_stats.db",  samarkand_students_usernames)
 
         try:
-            intensive_start_date = datetime.date(2025, 1, 27)
+            intensive_start_date = datetime.date(2025, 3, 3)
             today = datetime.date.today()
             one_week_ago = today - datetime.timedelta(weeks=1)
             date_to_use = one_week_ago if one_week_ago - datetime.timedelta(weeks=1) > intensive_start_date else intensive_start_date
@@ -762,8 +761,8 @@ def main():
             get_api_token()
             token = get_file_token()
 
-            parse_student_info(token, intensive_month_selected)
-            parse_personal_stats(token, intensive_month_selected)
+            # parse_student_info(token, intensive_month_selected)
+            # parse_personal_stats(token, intensive_month_selected)
             update_read_databases()
 
         elif sys.argv[1] == "parse_exam_progress":
@@ -800,9 +799,11 @@ def main():
             if not os.path.exists(f'data_{intensive_month_selected}/participants/tashkent/intensiv_participants.csv') or not os.path.exists(f'data_{intensive_month_selected}/participants/samarkand/intensiv_participants.csv'):
                 get_all_intensiv_participants_api(token)
 
+            
 
-            get_specific_project_complеtion_info(token, str(project_id), week, task, intensive_month_selected)
-            update_posts_db(task, intensive_month_selected)
+
+            # get_specific_project_complеtion_info(token, str(project_id), week, task, intensive_month_selected)
+            # update_posts_db(task, intensive_month_selected)
 
             update_task(db_path=f"data_{intensive_month_selected}/tasks.db", task=task, being_parsed=0)
 
