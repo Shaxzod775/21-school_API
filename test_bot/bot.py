@@ -132,7 +132,7 @@ async def show_main_options(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
     num_active_students = get_active_students(f"../api/data_{intensive_month_selected}/participants/{campus}/participants.db")
   
-    num_students = 699 if campus == "tashkent" else 347
+    num_students = 636 if campus == "tashkent" else 250
 
     if language == "russian":
         campus_language_specified = "Ташкент" if campus == "tashkent" else "Самарканд"
@@ -561,17 +561,23 @@ async def show_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     edu_username = get_data(update.effective_chat.id, "edu_username")
 
+
+
+
     if edu_username is None:
         keyboard.insert(0, [InlineKeyboardButton(KEYBOARDS['show_profile']['keyboard'][language], callback_data="authorize_user")])
         reply_markup = InlineKeyboardMarkup(keyboard)
         await query.edit_message_reply_markup(reply_markup=reply_markup)
     else:
-        report = make_profile_report(language, campus, f"../api/data_{intensive_month_selected}/participants_to_read/{campus}/personal_stats.db", edu_username)
         reply_markup = InlineKeyboardMarkup(keyboard)
+        # report = make_profile_report(language, campus, f"../api/data_{intensive_month_selected}/participants_to_read/{campus}/personal_stats.db", edu_username)
+        # reply_markup = InlineKeyboardMarkup(keyboard)
 
-        image_path = f"../api/data_{intensive_month_selected}/images/{random.randint(1, 3)}.png"
+        # image_path = f"../api/data_{intensive_month_selected}/images/{random.randint(1, 3)}.png"
 
-        await query.edit_message_caption(caption=report, reply_markup=reply_markup)
+        # await query.edit_message_caption(caption=report, reply_markup=reply_markup)
+
+        await query.edit_message_caption(caption="Данные в вашем профиле появятся с 5 марта!", reply_markup=reply_markup)
 
         # try:
         #     with open(image_path, "rb") as image_file:

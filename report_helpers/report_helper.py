@@ -1,6 +1,7 @@
 import sys
 sys.path.append("..")
 
+import os
 # from api.main import *
 from test_bot.config_api import *
 
@@ -156,9 +157,9 @@ def make_profile_report(language, campus, db_path, student):
     # Logtime section
     if result['logtime']['rank'] <= 10:
         _return += {
-            "english": f"👑 You are in the top 10 for time spent at the {campus} campus! You are ranked {result['logtime']['rank']} out of 699 students. \nAre you inflating your hours?🤨\n\n",
-            "russian": f"👑 Вы входите в топ-10 по провождению времени в кампусе {campus}! Вы на {result['logtime']['rank']} месте среди 699 учеников. \nНакручиваешь себе часы?🤨\n\n",
-            "uzbek": f"👑 Siz {campus} kampusida vaqt o'tkazish bo'yicha eng yaxshi 10 talikadasiz! Siz {result['logtime']['rank']}-o'rindasiz 699 talaba orasida. \nSoatingizni o'ziyaptimi?🤨\n\n"
+            "english": f"👑 You are in the top 10 for time spent at the {campus} campus! You are ranked {result['logtime']['rank']} out of 636 students. \nAre you inflating your hours?🤨\n\n",
+            "russian": f"👑 Вы входите в топ-10 по провождению времени в кампусе {campus}! Вы на {result['logtime']['rank']} месте среди 636 учеников. \nНакручиваешь себе часы?🤨\n\n",
+            "uzbek": f"👑 Siz {campus} kampusida vaqt o'tkazish bo'yicha eng yaxshi 10 talikadasiz! Siz {result['logtime']['rank']}-o'rindasiz 636 talaba orasida. \nSoatingizni o'ziyaptimi?🤨\n\n"
         }[language]
     elif result['logtime']['percent_more'] > 50.00:
         _return += {
@@ -176,15 +177,15 @@ def make_profile_report(language, campus, db_path, student):
     # Tasks section
     if result['tasks']['rank'] <= 10:
         _return += {
-            "english": f"👑✅ You are in the top 10 students for completed projects at the {campus} campus! You are ranked {result['tasks']['rank']} out of 699 students. \nAre you copying from ChatGPT?🤭\n\n",
-            "russian": f"👑✅ Вы входите в топ-10 учеников по сданным проектам в кампусе {campus}! Вы на {result['tasks']['rank']} месте среди 699 учеников. \nСписываешь c ChatGpt?🤭\n\n",
-            "uzbek": f"👑✅ Siz {campus} kampusida topshirilgan loyihalar bo'yicha eng yaxshi 10 talikadasiz! Siz {result['tasks']['rank']}-o'rindasiz 699 talaba orasida. \nChatGPTdan nusxalayapsizmi?🤭\n\n" 
+            "english": f"👑✅ You are in the top 10 students for completed projects at the {campus} campus! You are ranked {result['tasks']['rank']} out of 636 students. \nAre you copying from ChatGPT?🤭\n\n",
+            "russian": f"👑✅ Вы входите в топ-10 учеников по сданным проектам в кампусе {campus}! Вы на {result['tasks']['rank']} месте среди 636 учеников. \nСписываешь c ChatGpt?🤭\n\n",
+            "uzbek": f"👑✅ Siz {campus} kampusida topshirilgan loyihalar bo'yicha eng yaxshi 10 talikadasiz! Siz {result['tasks']['rank']}-o'rindasiz 636 talaba orasida. \nChatGPTdan nusxalayapsizmi?🤭\n\n" 
         }[language]
     elif result['tasks']['percent_more'] < 50.00:
         _return += {
-            "english": f"✅ You are in {result['tasks']['rank']}th place for project submissions out of 699 participants in the intensive course. \n\n",
-            "russian": f"✅ Вы на {result['tasks']['rank']} месте по сдаче проэктов из 699 участников интенсива. \n\n",
-            "uzbek": f"✅ Siz {result['tasks']['rank']}-o'rindasiz, intensiv kursda 699 ishtirokchi orasida loyihalarni topshirish bo'yicha \n\n" 
+            "english": f"✅ You are in {result['tasks']['rank']}th place for project submissions out of 636 participants in the intensive course. \n\n",
+            "russian": f"✅ Вы на {result['tasks']['rank']} месте по сдаче проэктов из 636 участников интенсива. \n\n",
+            "uzbek": f"✅ Siz {result['tasks']['rank']}-o'rindasiz, intensiv kursda 636 ishtirokchi orasida loyihalarni topshirish bo'yicha \n\n" 
         }[language]
     elif result['tasks']['percent_less'] > 50.00:
         _return += {
@@ -196,9 +197,9 @@ def make_profile_report(language, campus, db_path, student):
     # Edu events section
     if result['edu_events']['rank'] <= 10:
         _return += {
-            "english": f"👑🤓 You are in the top 10 students for educational events at the {campus} campus! You are ranked {result['edu_events']['rank']} out of 699 students. \n\n",
-            "russian": f"👑🤓 Вы входите в топ-10 учеников по количеству образовательных ивентов в кампусе {campus}! Вы на {result['edu_events']['rank']} месте среди 699 учеников. \n\n",
-            "uzbek": f"👑🤓 Siz {campus} kampusida ta'lim tadbirlari bo'yicha eng yaxshi 10 talikadasiz! Siz {result['edu_events']['rank']}-o'rindasiz 699 talaba orasida. \n\n"
+            "english": f"👑🤓 You are in the top 10 students for educational events at the {campus} campus! You are ranked {result['edu_events']['rank']} out of 636 students. \n\n",
+            "russian": f"👑🤓 Вы входите в топ-10 учеников по количеству образовательных ивентов в кампусе {campus}! Вы на {result['edu_events']['rank']} месте среди 636 учеников. \n\n",
+            "uzbek": f"👑🤓 Siz {campus} kampusida ta'lim tadbirlari bo'yicha eng yaxshi 10 talikadasiz! Siz {result['edu_events']['rank']}-o'rindasiz 636 talaba orasida. \n\n"
         }[language]
     elif result['edu_events']['percent_more'] < 50.00:
         _return += {
@@ -216,9 +217,9 @@ def make_profile_report(language, campus, db_path, student):
     # Ent events section
     if result['ent_events']['rank'] <= 10:
         _return += {
-            "english": f"👑🤡 You are in the top 10 students for entertainment events at the {campus} campus! You are ranked {result['ent_events']['rank']} out of 699 students. \n\n",
-            "russian": f"👑🤡 Вы входите в топ-10 учеников по количеству развлекательных ивентов в кампусе {campus}! Вы на {result['ent_events']['rank']} месте среди 699 учеников. \n\n",
-            "uzbek": f"👑🤡 Siz {campus} kampusida ko'ngilochar tadbirlar bo'yicha eng yaxshi 10 talikadasiz! Siz {result['ent_events']['rank']}-o'rindasiz 699 talaba orasida. \n\n"
+            "english": f"👑🤡 You are in the top 10 students for entertainment events at the {campus} campus! You are ranked {result['ent_events']['rank']} out of 636 students. \n\n",
+            "russian": f"👑🤡 Вы входите в топ-10 учеников по количеству развлекательных ивентов в кампусе {campus}! Вы на {result['ent_events']['rank']} месте среди 636 учеников. \n\n",
+            "uzbek": f"👑🤡 Siz {campus} kampusida ko'ngilochar tadbirlar bo'yicha eng yaxshi 10 talikadasiz! Siz {result['ent_events']['rank']}-o'rindasiz 636 talaba orasida. \n\n"
         }[language]
     elif result['ent_events']['percent_more'] < 22.50:
         _return += {
@@ -236,9 +237,9 @@ def make_profile_report(language, campus, db_path, student):
     # Total events section
     if result['total_events']['rank'] <= 10:
         _return += {
-            "english": f"👑😱 You are in the top 10 students for total events at the {campus} campus! ✨ You are ranked {result['total_events']['rank']} out of 699 students. \n\n",
-            "russian": f"👑😱 Вы входите в топ-10 учеников по общему количеству ивентов в кампусе {campus}! ✨ Вы на {result['total_events']['rank']} месте среди 699 учеников. \n\n",
-            "uzbek": f"👑😱 Siz {campus} kampusida umumiy tadbirlar bo'yicha eng yaxshi 10 talikadasiz! ✨ Siz {result['total_events']['rank']}-o'rindasiz 699 talaba orasida. \n\n"
+            "english": f"👑😱 You are in the top 10 students for total events at the {campus} campus! ✨ You are ranked {result['total_events']['rank']} out of 636 students. \n\n",
+            "russian": f"👑😱 Вы входите в топ-10 учеников по общему количеству ивентов в кампусе {campus}! ✨ Вы на {result['total_events']['rank']} месте среди 636 учеников. \n\n",
+            "uzbek": f"👑😱 Siz {campus} kampusida umumiy tadbirlar bo'yicha eng yaxshi 10 talikadasiz! ✨ Siz {result['total_events']['rank']}-o'rindasiz 636 talaba orasida. \n\n"
         }[language]
     elif result['total_events']['percent_more'] < 22.50:
         _return += {

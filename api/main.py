@@ -18,6 +18,7 @@ from configs.config_bot import *
 from report_helpers.report_helper import *
 
 
+
 def get_api_token():
     data = {
         'client_id':'s21-open-api',
@@ -411,7 +412,7 @@ def parse_student_info(access_token, intensive_month_selected):
                     exp_to_next_level = response_basic_info_json['expToNextLevel']
 
                     update_participant(db_path_samarkand, incompleted_participants_samarkand[i], logtime=logtime, level=level, exp=exp_value, exp_to_next_level=exp_to_next_level)
-                    print(f"Student {incompleted_participants_tashkent[i]} has been updated in Samarkand")
+                    print(f"Student {incompleted_participants_samarkand[i]} has been updated in Samarkand")
                     if i > 0:
                         set_last_parced_student(db_path_samarkand, incompleted_participants_samarkand[i - 1], 0)
 
@@ -749,7 +750,6 @@ def update_posts_db(task, intensive_month_selected):
 
 
 
-
 def main():
     if len(sys.argv) == 3:
         if sys.argv[2] not in INTENSIVE_MONTHS:
@@ -761,8 +761,8 @@ def main():
             get_api_token()
             token = get_file_token()
 
-            # parse_student_info(token, intensive_month_selected)
-            # parse_personal_stats(token, intensive_month_selected)
+            parse_student_info(token, intensive_month_selected)
+            parse_personal_stats(token, intensive_month_selected)
             update_read_databases()
 
         elif sys.argv[1] == "parse_exam_progress":
@@ -802,8 +802,8 @@ def main():
             
 
 
-            # get_specific_project_complеtion_info(token, str(project_id), week, task, intensive_month_selected)
-            # update_posts_db(task, intensive_month_selected)
+            get_specific_project_complеtion_info(token, str(project_id), week, task, intensive_month_selected)
+            update_posts_db(task, intensive_month_selected)
 
             update_task(db_path=f"data_{intensive_month_selected}/tasks.db", task=task, being_parsed=0)
 
