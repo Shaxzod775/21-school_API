@@ -1,0 +1,31 @@
+2024 yil noyabr' oyi Toshkent intensiv kursi hisoboti
+
+Statistikaga faqat asosiy dasturga o'tgan talabalar kiritilgan!
+
+Noyabr' oyida 700 ishtirokchidan 125 nafari asosiy dasturga qabul qilindi.
+
+Ularning nimalari bor edi:
+
+🔹Tadbirlar
+
+O'tgan talabalarning har uchtasidan biri bironta tadbirda qatnashmagan, lekin 50% dan ortig'i kamida bittasida qatnashgan.
+
+🔹Tugatilgan loyihalar
+
+90% dan ortig'i 1 dan 5 tagacha loyihani tugatgan.
+
+Ikki kishi faqat 1 ta loyihani tugatib o'tgan (T01D01, birinchi kun loyihasi).
+
+🔹EXP va Daraja
+
+84 talaba 250 exp dan kamga ega bo'lgan (0 lvl, 50% dan kam). Faqat ikki nafari 1 lvl dan yuqoriga ega bo'lgan: nilayosh (1 lvl) va bushymic (2 lvl).
+
+🔹Jarima va Cheating
+
+O'tganlar orasida cheaterlar yo'q! Lekin jarimasi borlar bor.
+
+🔹Kampusga qatnash (Logtime)
+
+O'tgan talabalarning barchasi kampusda o'rtacha 3 soatdan ko'proq vaqt o'tkazgan.
+
+Ma'lumotlar @stats_21bot dan!
