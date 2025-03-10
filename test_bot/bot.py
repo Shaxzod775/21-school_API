@@ -8,7 +8,6 @@ from db_modules import *
 from configs.config_bot import *
 from api.main import *
 from api_helper import *
-from encrypt import *
 from report_helpers.report_helper import _process_report_type, make_report, make_profile_report
 import random
 import re
@@ -500,7 +499,7 @@ async def authorize_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
         raise KeyError(f"An error occurred\n{e}")
 
     if query.data == "authorize_user":
-        context.user_data.clear()  # Очистка предыдущих данных
+        context.user_data.clear()  
         context.user_data['auth_chat_id'] = update.effective_chat.id
 
         await query.edit_message_caption(caption=KEYBOARDS['authorize_user']['caption'][language])
@@ -512,7 +511,7 @@ async def authorize_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик текстового ввода (логин и пароль)"""
     if 'awaiting' not in context.user_data:
-        return  # Игнорируем текстовые сообщения без контекста
+        return  
 
     try:
         language = get_data(update.effective_chat.id, 'language')
@@ -530,17 +529,14 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data['edu_password'] = text
         username = context.user_data['edu_username']
         password = context.user_data['edu_password']
-        context.user_data.pop('awaiting', None)  # Очистить статус
+        context.user_data.pop('awaiting', None) 
 
         user = await api_authorization(username, password)
 
         if user:
             chat_id = update.effective_chat.id
 
-            cipher = AESCipher(XXX)
-            encrypted_password = cipher.encrypt(password)
-
-            update_user(chat_id, edu_username=username, edu_password=encrypted_password) 
+            update_user(chat_id, edu_username=username, edu_password="xxx") 
             await update.message.reply_text(KEYBOARDS['handle_text']['success'][language])
         else:
             await update.message.reply_text(KEYBOARDS['handle_text']['failure'][language])
@@ -570,14 +566,14 @@ async def show_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_reply_markup(reply_markup=reply_markup)
     else:
         reply_markup = InlineKeyboardMarkup(keyboard)
-        # report = make_profile_report(language, campus, f"../api/data_{intensive_month_selected}/participants_to_read/{campus}/personal_stats.db", edu_username)
-        # reply_markup = InlineKeyboardMarkup(keyboard)
+        report = make_profile_report(language, campus, f"../api/data_{intensive_month_selected}/participants_to_read/{campus}/personal_stats.db", edu_username)
+        reply_markup = InlineKeyboardMarkup(keyboard)
 
-        # image_path = f"../api/data_{intensive_month_selected}/images/{random.randint(1, 3)}.png"
+        image_path = f"../api/data_{intensive_month_selected}/images/{random.randint(1, 3)}.png"
 
-        # await query.edit_message_caption(caption=report, reply_markup=reply_markup)
+        await query.edit_message_caption(caption=report, reply_markup=reply_markup)
 
-        await query.edit_message_caption(caption="Данные в вашем профиле появятся с 5 марта!", reply_markup=reply_markup)
+        # await query.edit_message_caption(caption="Данные в вашем профиле появятся с 8 марта!", reply_markup=reply_markup)
 
         # try:
         #     with open(image_path, "rb") as image_file:

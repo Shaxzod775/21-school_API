@@ -63,17 +63,17 @@ def get_task(task, db_path):
     cursor = conn.cursor()
 
     try:
-        cursor.execute("SELECT has_been_parsed, being_parsed, start, end FROM tasks WHERE task = ?", (task,)) #Added start and end
+        cursor.execute("SELECT has_been_parsed, being_parsed, start, end FROM tasks WHERE task = ?", (task,))
         task_data = cursor.fetchone()
 
         if task_data:
             has_been_parsed = bool(task_data[0])
             being_parsed = bool(task_data[1])
-            start_date = task_data[2]  # Retrieve start date
-            end_date = task_data[3]    # Retrieve end date
-            return has_been_parsed, being_parsed, start_date, end_date #Return start and end dates
+            start_date = task_data[2]  
+            end_date = task_data[3]    
+            return has_been_parsed, being_parsed, start_date, end_date 
         else:
-            return None, None, None, None  # Return None for all if task not found
+            return None, None, None, None  
 
     except sqlite3.Error as e:
          raise sqlite3.Error(f"An error occured while getting the task. Error: {e}. Task: {task}")
@@ -81,7 +81,7 @@ def get_task(task, db_path):
         conn.close()
 
 
-def update_task(db_path, task, has_been_parsed=None, being_parsed=None, start_date=None, end_date=None):  # Added start and end
+def update_task(db_path, task, has_been_parsed=None, being_parsed=None, start_date=None, end_date=None):  
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
@@ -312,7 +312,7 @@ def get_incompleted_participants(campus):
         conn = sqlite3.connect(f"data_{intensive_month_selected}/participants/{campus}/participants.db")
         cursor = conn.cursor()
 
-        cursor.execute("SELECT student FROM participants WHERE exp_to_next_level = 0")
+        cursor.execute("SELECT student FROM participants WHERE logtime > 0")
         participant_data = cursor.fetchall()
 
         if participant_data:

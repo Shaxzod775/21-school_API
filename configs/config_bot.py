@@ -109,16 +109,16 @@ KEYBOARDS = {
             "russian": [{"text": "Профиль", "callback_data" : "profile"}, {"text":"Статистика по заданиям", "callback_data" : "stats"}, {"text": "Язык", "callback_data": "change_language"}, {"text": "Кампус", "callback_data": "change_campus"}, {"text": "Прошлые интенсивы", "callback_data": "previous_intensives"}],
             "uzbek": [{"text": "Profil", "callback_data" : "profile"}, {"text":"Topshiriqlar statistikasi", "callback_data" : "stats"}, {"text": "Til", "callback_data": "change_language"}, {"text": "Kampus", "callback_data": "change_campus"}, {"text": "O\'tgan intensivlar", "callback_data": "previous_intensives"}]
         },
-        "caption_during_intensive": {  
-            "english": "🏫 Campus: {campus}\n\n✅ Actively visiting the campus: {num_active_students} out of {num_students}\n\n🧑🏻If the buttons are not working, please enter /start",  
-            "russian": "🏫 Кампус: {campus}\n\n✅ Активно посещают кампус: {num_active_students} из {num_students}\n\nЕсли кнопки не жмуться введите /start", 
-            "uzbek": "🏫 Kampus: {campus}\n\n✅ Kampusga faol tashrif buyuruvchilar: {num_students} dan {num_active_students}\n\nAgar tugmalar ishlamasa\, iltimos\, /start kiriting" 
-        },
         # "caption_during_intensive": {  
-        #     "english": "🏫 Campus: {campus}\n\n✅ Actively visiting the campus: {num_active_students} out of {num_students}\n\n🧑🏻‍🎓 Best student in the campus: {student} \( Level {level} \| {exp} exp \)\n\n If the buttons are not working, please enter /start",  
-        #     "russian": "🏫 Кампус: {campus}\n\n✅ Активно посещают кампус: {num_active_students} из {num_students}\n\n🧑🏻‍🎓 Лучший студент в кампусе: {student} \( {level} уровень \| {exp} exp \)\n\nЕсли кнопки не жмуться введите /start", 
-        #     "uzbek": "🏫 Kampus: {campus}\n\n✅ Kampusga faol tashrif buyuruvchilar: {num_students} dan {num_active_students}\n\n🧑🏻‍🎓 Kampusda eng yaxshi talaba: {student} \( {level} daraja \| {exp} tajriba \)\n\nAgar tugmalar ishlamasa\, iltimos\, /start kiriting" 
+        #     "english": "🏫 Campus: {campus}\n\n✅ Actively visiting the campus: {num_active_students} out of {num_students}\n\n🧑🏻If the buttons are not working, please enter /start",  
+        #     "russian": "🏫 Кампус: {campus}\n\n✅ Активно посещают кампус: {num_active_students} из {num_students}\n\nЕсли кнопки не жмуться введите /start", 
+        #     "uzbek": "🏫 Kampus: {campus}\n\n✅ Kampusga faol tashrif buyuruvchilar: {num_students} dan {num_active_students}\n\nAgar tugmalar ishlamasa\, iltimos\, /start kiriting" 
         # },
+        "caption_during_intensive": {  
+            "english": "🏫 Campus: {campus}\n\n✅ Actively visiting the campus: {num_active_students} out of {num_students}\n\n🧑🏻‍🎓 Best student in the campus: {student} \( Level {level} \| {exp} exp \)\n\n If the buttons are not working, please enter /start",  
+            "russian": "🏫 Кампус: {campus}\n\n✅ Активно посещают кампус: {num_active_students} из {num_students}\n\n🧑🏻‍🎓 Лучший студент в кампусе: {student} \( {level} уровень \| {exp} exp \)\n\nЕсли кнопки не жмуться введите /start", 
+            "uzbek": "🏫 Kampus: {campus}\n\n✅ Kampusga faol tashrif buyuruvchilar: {num_students} dan {num_active_students}\n\n🧑🏻‍🎓 Kampusda eng yaxshi talaba: {student} \( {level} daraja \| {exp} tajriba \)\n\nAgar tugmalar ishlamasa\, iltimos\, /start kiriting" 
+        },
         "caption_out_of_intensive": {
             "english": "🏫 Campus: {campus}\n\n🙃The last intensive is over\. Waiting for the start of the new one\n\n🫠You can view reports on past intensives by clicking the \"Past Intensives\" button\n\nIf the buttons are not working, please enter /start",  
             "russian": "🏫 Кампус: {campus}\n\n🙃Последний интенсив завершен\. Ждем начало нового интенсива\n\n🫠Пока вы можете посмотреть отчеты по прошлым интенсивам нажав на кнопку \"Прошлые интенсивы\"\n\nЕсли кнопки не жмуться введите /start", 

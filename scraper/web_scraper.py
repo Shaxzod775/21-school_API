@@ -7,7 +7,7 @@ from selenium.webdriver.chrome.options import Options
 import time
 import re
 
-def load_edu_page(url, username, password, students):
+def load_edu_page(url, username, password, students, task):
     chrome_options = Options()
     chrome_options.add_argument("--disable-extensions")
     driver = webdriver.Chrome(options=chrome_options)
@@ -45,9 +45,28 @@ def load_edu_page(url, username, password, students):
 
 
         for student in students:
-            driver.get(f"https://edu.21-school.ru/profile/{student}/project/19162/evaluations")
+            driver.get(f"https://edu.21-school.ru/profile/{student}")
 
             try:
+                see_all_projects_button = WebDriverWait(driver, 60).until(
+                    EC.presence_of_element_located((By.XPATH, "//*[text()='See all projects']"))
+                )
+
+                see_all_projects_button.click()
+
+                task_button = WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.XPATH, f"//*[text()='{task}']"))
+                )
+
+                task_button.click()
+
+
+            except Exception:
+                print(f"Could not find the project: {e}")
+
+            try:
+                
+
                 reviews_link = WebDriverWait(driver, 10).until(
                     EC.presence_of_element_located((By.XPATH, "//*[text()='Reviews']"))
                 )
@@ -59,7 +78,6 @@ def load_edu_page(url, username, password, students):
                 print(f"Could not find or click Reviews: {e}")
                 return
 
-            print("'a' reviews is found!")
 
             try:
                 div_elements = WebDriverWait(driver, 10).until(
@@ -103,8 +121,9 @@ def load_edu_page(url, username, password, students):
                 couldnt_find_reviews.append(student)
                 print(f"Could not find the div with data-testid 'components.hint' of the student {student}: {e}")
 
-        print(f"Total clang-format failures: {clang_format_failed}")
-        print(f"Total valgrind failures: {valgrind_failed}")
+            print(f"Total clang-format failures: {clang_format_failed}")
+            print(f"Total valgrind failures: {valgrind_failed}")
+           
 
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -112,181 +131,251 @@ def load_edu_page(url, username, password, students):
         print(couldnt_find_reviews)
         driver.quit()
 
+# aemonsig
+# alliseet
+# annattoa
+# audreajo
+# beckioph
+# bethannl
+# boothjae
+# bowendar
+# breannav
+# brenetts
+# burtinga
+# carisayo
+# carmahan
+# carrowek
+# caryearn
+# chancech
+# cheddarn
+# cherishd
+# chingunc
+# cieraarg
+# clydemai
+# cobbleri
+# collineg
+# correyer
+# cousinch
+# creolaca
+# cyndiwil
+# dancerlu
+# danutael
+# deadrato
+
+
 def main():
     website_url = "https://edu.21-school.ru"
     your_username = "glassole"
     your_password = "Sh7757723!"
 
     students = [
-    'abbiehil',
-    'ahaivida',
-    'antioned',
-    'aristotl',
-    'arthormi',
-    'bagshotk',
-    'bambithe',
-    'belaquoa',
-    'binkscha',
-    'bluesdan',
-    'bobbicel',
-    'breaadvi',
-    'builderm',
-    'bullockk',
-    'bullrodr',
-    'bumpdiam',
-    'calebsou',
-    'changspi',
-    'cherrira',
-    'cleorame',
-    'collioka',
-    'cordiaho',
-    'daceyhaz',
-    'dafynqyb',
-    'dameronm',
-    'darcieje',
-    'darciekr',
-    'davidach',
-    'davossti',
-    'dejaswyf',
-    'dillyjad',
-    'dodriocu',
-    'drummshe',
-    'endadean',
-    'eufemiaz',
-    'eusebiof',
-    'exienore',
-    'farrowro',
-    'fixiefal',
-    'floriadi',
-    'friarear',
-    'fringshi',
-    'furstana',
-    'garnetjo',
-    'garrettg',
-    'gaytejan',
-    'gazlowed',
-    'gerrerat',
-    'ghishybr',
-    'ghulbets',
-    'gilldenn',
-    'grasslim',
-    'greggjos',
-    'grootism',
-    'gurneyhe',
-    'halinalu',
-    'harethch',
-    'headburl',
-    'hermanpo',
-    'hildadea',
-    'hosmanvi',
-    'ildanyst',
-    'imeldasa',
-    'iraidaar',
-    'jaleesar',
-    'josethla',
-    'kalacaro',
-    'kegswife',
-    'knightbu',
-    'kudzumor',
-    'laborlis',
-    'larkcord',
-    'latinaco',
-    'lavellen',
-    'lawannas',
-    'leotasna',
-    'leroykel',
-    'levelmyr',
-    'lisafert',
-    'lorenesu',
-    'lorimers',
-    'luyaione',
-    'mallieva',
-    'maokaisa',
-    'marleens',
-    'marqrosa',
-    'marthmaj',
-    'marxfior',
-    'mellydae',
-    'melvinap',
-    'meterryt',
-    'mireille',
-    'mirianhi',
-    'monteala',
-    'moroamer',
-    'murkyqui',
-    'myrnamag',
-    'narcissa',
-    'nidiabea',
-    'nutethin',
-    'offalsun',
-    'olliewhi',
-    'orivelam',
-    'orvillej',
-    'ossiemar',
-    'palmerth',
-    'pepperlu',
-    'petyrman',
-    'pizzajel',
-    'poochieb',
-    'procyonh',
-    'profitjo',
-    'quincymi',
-    'rashadle',
-    'roadfral',
-    'rockkohl',
-    'roggoson',
-    'rosyophe',
-    'rudolphf',
-    'sallyale',
-    'sallyarc',
-    'sandiebl',
-    'sandiesh',
-    'satanele',
-    'scarbsil',
-    'sewerele',
-    'shaddamh',
-    'shanelau',
-    'sharanma',
-    'silvanah',
-    'silvialu',
-    'simmonsc',
-    'sindyalq',
-    'skyrimsi',
-    'smokedsi',
-    'snowbabi',
-    'solebenn',
-    'stanleyj',
-    'stridere',
-    'strongty',
-    'sulusamu',
-    'syriohal',
-    'tandyvip',
-    'teodorab',
-    'teraxiom',
-    'teresaap',
-    'thattfro',
-    'thelmati',
-    'theyregi',
-    'tigrarub',
-    'tildache',
-    'toombezh',
-    'torrigri',
-    'torwoldf',
-    'tracerci',
-    'traceref',
-    'ultrabor',
-    'veezardo',
-    'velmagar',
-    'velvetap',
-    'venettad',
-    'vipirnet',
-    'waitemal',
-    'whitneys',
-    'xochitlb',
-    'zarquonb'
-]
+    "alvinaaz",
+    "annattoa",
+    "annikagy",
+    "armandow",
+    "beckioph",
+    "bodecoll",
+    "burtinga",
+    "caroleii",
+    "caryearn",
+    "celindag",
+    "cherishd",
+    "corellab",
+    "coriejal",
+    "cousinch",
+    "creenwen",
+    "deanncla",
+    "dennetfr",
+    "dianatan",
+    "dookumur",
+    "eldriena",
+    "gengarma",
+    "gerrehel",
+    "goblinpo",
+    "goylesea",
+    "hortonjo",
+    "jarredwa",
+    "jazminis",
+    "jenicece",
+    "jinnysor",
+    "leighahe",
+    "lomokraz",
+    "lottnorb",
+    "lyannafe",
+    "mackhors",
+    "magaretm",
+    "mainesmy",
+    "malonehi",
+    "manceste",
+    "manilowa",
+    "margartd",
+    "marianaj",
+    "marlineb",
+    "marrygle",
+    "martacha",
+    "masakopo",
+    "maximest",
+    "medeaali",
+    "mellaraa",
+    "merrybri",
+    "metapodk",
+    "metapodp",
+    "michaerm",
+    "michealc",
+    "migashir",
+    "milissat",
+    "mitziebr",
+    "moffmoro",
+    "moltenvi",
+    "moranmjo",
+    "morganni",
+    "mornecam",
+    "mycahvec",
+    "myunggro",
+    "naidaarm",
+    "nailstou",
+    "nancidou",
+    "natoshaw",
+    "needfule",
+    "nievesma",
+    "nikitael",
+    "nikolear",
+    "niranyes",
+    "nordervo",
+    "nyotawar",
+    "oberynpy",
+    "odessalo",
+    "olincomm",
+    "oliveslu",
+    "ollidore",
+    "orgnarda",
+    "orlandsp",
+    "oswellas",
+    "owenmorw",
+    "oystersf",
+    "paprikho",
+    "peanutsc",
+    "pearseta",
+    "pecorink",
+    "pemfordj",
+    "pibblesc",
+    "pigeonpo",
+    "pingrhod",
+    "pintofau",
+    "plackgan",
+    "pontusjo",
+    "ponytapi",
+    "profitbo",
+    "qothoyae",
+    "quenceza",
+    "quentonl",
+    "quincyse",
+    "raisaemm",
+    "rambtoco",
+    "raneyhun",
+    "raynejig",
+    "redwynsw",
+    "renfredm",
+    "rexxarwi",
+    "rhaellac",
+    "rhodesla",
+    "robbyjab",
+    "roellevo",
+    "rosalbal",
+    "rosannem",
+    "rosbykat",
+    "roseypib",
+    "rowangra",
+    "roxannwi",
+    "ruittgir",
+    "ruthabea",
+    "ruthelma",
+    "ryannwin",
+    "ryzearge",
+    "sandserr",
+    "sanjayjo",
+    "sarabath",
+    "saranoth",
+    "scarypip",
+    "schauerq",
+    "septicli",
+    "seymourt",
+    "shalager",
+    "shanarat",
+    "shanekam",
+    "shanikaw",
+    "sharellt",
+    "sharilye",
+    "shawnase",
+    "shazamel",
+    "sheilahf",
+    "shellawa",
+    "shireisu",
+    "shperezo",
+    "sklueang",
+    "soldtoma",
+    "sophieau",
+    "spectref",
+    "staceyfe",
+    "staciero",
+    "stephenr",
+    "stooploc",
+    "sybellek",
+    "sybillcl",
+    "systemme",
+    "tainacat",
+    "takeruka",
+    "tamalaca",
+    "tammyyol",
+    "tarberel",
+    "tarentom",
+    "tashiaob",
+    "teenyjai",
+    "thersami",
+    "thoraher",
+    "thormorc",
+    "thorossa",
+    "thuyfera",
+    "tierrawa",
+    "tildeele",
+    "timothyv",
+    "toadfile",
+    "todricch",
+    "tomikach",
+    "toppingp",
+    "toppingy",
+    "toshikod",
+    "tracieme",
+    "trundler",
+    "tuvokron",
+    "urgotkur",
+    "venitaco",
+    "vinitase",
+    "vronemer",
+    "wadeadal",
+    "waspdaug",
+    "weirdlan",
+    "wifebike",
+    "wileyoni",
+    "winkywar",
+    "woodensh",
+    "wraithlo",
+    "wynchulm",
+    "xayahtho",
+    "ygrittem",
+    "yingcleg",
+    "yingurri",
+    "youtaoly",
+    "ytramsgu",
+    "yucciena",
+    "zapelhug",
+    "zarquonk",
+    "zellashi",
+    "zenzthem",
+    "zoltanal",
+    "zucchinr"]
 
-    load_edu_page(website_url, your_username, your_password, students)
+    load_edu_page(website_url, your_username, your_password, students, "T03D03")
 
 if __name__ == "__main__":
     main()

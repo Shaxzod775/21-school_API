@@ -242,21 +242,25 @@ def get_specific_project_complеtion_info(access_token, project_id, week, projec
             
             incompleted_students_tashkent = list()
             null = get_student_task_result_by_status(db_path_tashkent, "NULL")
-            # registered = get_student_task_result_by_status(db_path_tashkent, "REGISTERED")
+            registered = get_student_task_result_by_status(db_path_tashkent, "REGISTERED")
+            assigned = get_student_task_result_by_status(db_path_tashkent, "ASSIGNED")
             in_progress = get_student_task_result_by_status(db_path_tashkent, "IN_PROGRESS")
             in_reviews = get_student_task_result_by_status(db_path_tashkent, "IN_REVIEWS")
 
             if null:
                 for student in null:
                     incompleted_students_tashkent.append(student)
-            # elif registered:
-            #     for student in registered:
-            #         incompleted_students_tashkent.append(student)
+            elif registered:
+                for student in registered:
+                    incompleted_students_tashkent.append(student)
             elif in_progress:
                 for student in in_progress:
                     incompleted_students_tashkent.append(student)
             elif in_reviews:
                 for student in in_reviews:
+                    incompleted_students_tashkent.append(student)
+            elif assigned:
+                for student in assigned:
                     incompleted_students_tashkent.append(student)
 
             if incompleted_students_tashkent:
@@ -279,6 +283,7 @@ def get_specific_project_complеtion_info(access_token, project_id, week, projec
             incompleted_students_samarkand = list()
             null = get_student_task_result_by_status(db_path_samarkand, "NULL")
             registered = get_student_task_result_by_status(db_path_samarkand, "REGISTERED")
+            assigned = get_student_task_result_by_status(db_path_samarkand, "ASSIGNED")
             in_progress = get_student_task_result_by_status(db_path_samarkand, "IN_PROGRESS")
             in_reviews = get_student_task_result_by_status(db_path_samarkand, "IN_REVIEWS")
 
@@ -293,6 +298,9 @@ def get_specific_project_complеtion_info(access_token, project_id, week, projec
                     incompleted_students_samarkand.append(student)
             elif in_reviews:
                 for student in in_reviews:
+                    incompleted_students_samarkand.append(student)
+            elif assigned:
+                for student in assigned:
                     incompleted_students_samarkand.append(student)
             
             if incompleted_students_samarkand:
