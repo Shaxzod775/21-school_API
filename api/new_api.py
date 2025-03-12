@@ -65,12 +65,6 @@ def parse_student_info(url, username, password, intensive_month_selected):
                 print("Login successful.")
 
 
-                # WebDriverWait(driver, 10).until(
-                #     EC.url_to_be("https://edu.21-school.ru/")
-                # )
-
-                # print("Login successful.")
-
             except (TimeoutException, NoSuchElementException) as e:
                 print(f"Login failed: {e.msg}")
                 return
@@ -113,66 +107,142 @@ def parse_student_info(url, username, password, intensive_month_selected):
 
 
                         try:
-                            svg_element = WebDriverWait(driver, 10).until(
-                                EC.presence_of_element_located((By.XPATH, "//svg[@xmlns='http://www.w3.org/2000/svg']"))
+                            attendance_widget = WebDriverWait(driver, 10).until(
+                                EC.presence_of_element_located((By.XPATH, "//div[@data-testid='attendanceWidget']"))
                             )
-                            svg_text = svg_element.text
+                            children = attendance_widget.find_elements(By.XPATH, "./*")
+                            if len(children) > 1:
+                                second_div_children = children[1].find_elements(By.XPATH, "./*")[0]
+                                logtime = second_div_children.find_elements(By.XPATH, "./*")[-1].text
+                                
+                                # for child in second_div_children:
+                                #     print(child.tag_name)
                         except TimeoutException:
-                            svg_text = "N/A"
-
-                        print("SVG svg_text: ", svg_text)
-
-                        print(f"{participant}, level: {level, lvl_percent}%, exp: {exp}")
-
-                    #     response_basic_info = requests.get(BASE_URL.format(f"/participants/{participant}"), headers=HEADERS)
-                    #     time.sleep(0.5)
-                    #     response_logtime = requests.get(BASE_URL.format(f"/participants/{participant}/logtime?date={date_to_use}"), headers=HEADERS)
-
-                    #     if response_logtime.status_code == 200 and response_basic_info.status_code == 200:
-                    #         logtime = float(response_logtime.text)
-                    #         info = json.loads(response_basic_info.text)
-                    #         update_participant(db_path, participant, logtime=logtime, level=info['level'], exp=info['expValue'], exp_to_next_level=info['expToNextLevel'])
-                    #         print(f"Student {participant} has been updated in {campus.capitalize()}")
-                    #         if i > 0:
-                    #             set_last_parced_student(db_path, incompleted_participants[i - 1], 0)
-                    #         set_last_parced_student(db_path, participant, 1)
-                    #         print(f'{participant}, {logtime}, {info["level"]}, {info["expValue"]}, {info["expToNextLevel"]}')
-                    #         time.sleep(1)
-
-                    # if get_last_parced_student(db_path) == incompleted_participants[-1]:
-                    #     set_last_parced_student(db_path, incompleted_participants[-1], 0)
-
-                    # parse_participants("tashkent", tashkent_students_usernames)
-                    # parse_participants("samarkand", samarkand_students_usernames)
+                            print("Attendance widget not found.")
 
 
+                        print(f"{participant}, level: {level, lvl_percent}%, exp: {exp}, logtime: {logtime}")
 
 
-
-        #     username_field = WebDriverWait(driver, 10).until(
-        #         EC.presence_of_element_located((By.NAME, "username"))
-        #     )
-        #     password_field = driver.find_element(By.NAME, "password")
-        #     button = driver.find_element(By.CLASS_NAME, "jss22").find_element(By.TAG_NAME, "button")
-
-        #     username_field.send_keys(username)
-        #     password_field.send_keys(password)
-        #     button.click()
-
-        #     WebDriverWait(driver, 10).until(
-        #         EC.url_to_be("https://edu.21-school.ru/")
-        #     )
-
-        #     print("Login successful.")
 
         except (TimeoutException, NoSuchElementException) as e:
             print(f"Login failed: {e}")
             return
 
 
-
     except (TimeoutException, NoSuchElementException) as e:
         print(f"Failed to login\n{e.msg}")
+        return
+
+
+
+def parse_personal_stats(url, username, password, intensive_month_selected):
+    auth_code = input("Пожалуйста введите пароль для двухэтапной аутентификации: ")
+    chrome_options = Options()
+    chrome_options.add_argument("--disable-extensions")
+    driver = webdriver.Chrome(options=chrome_options)
+
+
+    try:
+        driver.get(url)
+
+        time.sleep(5)
+        if driver.current_url.startswith("https://auth.sberclass.ru"):
+            try:
+                username_field = WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.NAME, "username"))
+                )
+                password_field = driver.find_element(By.NAME, "password")
+                button = driver.find_element(By.CLASS_NAME, "jss22").find_element(By.TAG_NAME, "button")
+
+                username_field.send_keys(username)
+                password_field.send_keys(password)
+                button.click()
+
+                WebDriverWait(driver, 10).until(
+                    EC.url_contains("https://auth.sberclass.ru/auth/realms/EduPowerKeycloak/login-actions/authenticate?execution")
+                )
+
+                print(driver.current_url)
+               
+                code_field = WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.XPATH, "//input[@name='otp' and @type='text']"))
+                )
+
+                code_field.click()
+
+                code_field.send_keys(auth_code)
+
+                button = driver.find_element(By.CLASS_NAME, "jss22").find_element(By.TAG_NAME, "button")
+
+                button.click()
+
+                WebDriverWait(driver, 10).until(
+                    EC.url_to_be("https://edu.21-school.ru/")
+                )
+
+                print("Login successful.")
+
+            try:
+                for city in ["tashkent", "samarkand"]:
+                    if os.path.exists(f"data_{intensive_month_selected}/participants/{city}/intensiv_participants.csv"):
+                        students = []
+                        with open(f"data_{intensive_month_selected}/participants/{city}/intensiv_participants.csv", 'r') as file:
+                            students = [line.strip() for line in file.readlines() if line.strip()]
+                        populate_participants(f"data_{intensive_month_selected}/participants/{city}/participants.db", city, students)
+                
+                        incompleted_participants = get_incompleted_participants(city)
+
+                        if not incompleted_participants:
+                            incompleted_participants = students
+
+                        db_path = f"data_{intensive_month_selected}/participants/{city}/participants.db"
+                        last_parced_student = get_last_parced_student(db_path)
+                        if last_parced_student and last_parced_student in incompleted_participants: 
+                            index = incompleted_participants.index(last_parced_student)
+                            incompleted_participants = incompleted_participants[index:]
+
+                        print(f"Parsing participants info in {city.capitalize()}")
+
+                        for i, participant in enumerate(incompleted_participants):
+                            driver.get(f"https://edu.21-school.ru/profile/{participant}/about")
+
+                            level = WebDriverWait(driver, 10).until(
+                                EC.presence_of_element_located((By.XPATH, "//div[@data-testid='personalInfo.levelCode']"))
+                            ).text[-1]
+
+                            lvl_percent = driver.find_element(By.XPATH, "//div[@data-testid='personalInfo.experiencePercent']").text[0]
+                            try:
+                                exp = WebDriverWait(driver, 1).until(
+                                    EC.presence_of_element_located((By.XPATH, "//*[@data-testid='personalInfo.xp']"))
+                                ).text
+                            except TimeoutException:
+                                exp = "N/A"
+
+
+                            try:
+                                attendance_widget = WebDriverWait(driver, 10).until(
+                                    EC.presence_of_element_located((By.XPATH, "//div[@data-testid='attendanceWidget']"))
+                                )
+                                children = attendance_widget.find_elements(By.XPATH, "./*")
+                                if len(children) > 1:
+                                    second_div_children = children[1].find_elements(By.XPATH, "./*")[0]
+                                    logtime = second_div_children.find_elements(By.XPATH, "./*")[-1].text
+                            except TimeoutException:
+                                print("Attendance widget not found.")
+
+
+                            print(f"{participant}, level: {level, lvl_percent}%, exp: {exp}, logtime: {logtime}")
+
+
+            except (TimeoutException, NoSuchElementException) as e:
+                print(f"Login failed: {e}")
+                return
+
+
+
+    except (TimeoutException, NoSuchElementException) as e:
+        print(f"Login failed: {e.msg}")
         return
 
 

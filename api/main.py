@@ -758,8 +758,6 @@ def main():
                 get_all_intensiv_participants_api(token)
 
             
-
-
             get_specific_project_complеtion_info(token, str(project_id), week, task, intensive_month_selected)
             update_posts_db(task, intensive_month_selected)
 
