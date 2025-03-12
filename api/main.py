@@ -16,14 +16,19 @@ from sorting_data.sort_helper import *
 from db_modules.db_api import *
 from configs.config_bot import *
 from report_helpers.report_helper import *
-
+from dotenv import load_dotenv
 
 
 def get_api_token():
+    load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
+
+    username = os.getenv('API_USERNAME')
+    password = os.getenv('API_PASSWORD')
+
     data = {
         'client_id':'s21-open-api',
-        'username':'glassole',
-        'password':'Sh7757723!',
+        'username': username,
+        'password': password,
         'grant_type':'password'
     }
 
@@ -354,93 +359,38 @@ def parse_student_info(access_token, intensive_month_selected):
             one_week_ago = today - datetime.timedelta(weeks=1)
             date_to_use = one_week_ago if one_week_ago - datetime.timedelta(weeks=1) > intensive_start_date else intensive_start_date
 
-            incompleted_participants_tashkent = get_incompleted_participants("tashkent")
+            def parse_participants(campus, usernames):
+                db_path = f"data_{intensive_month_selected}/participants/{campus}/participants.db"
+                incompleted_participants = get_incompleted_participants(campus) or usernames
+                last_parced_student = get_last_parced_student(db_path)
+                if last_parced_student in incompleted_participants:
+                    incompleted_participants = incompleted_participants[incompleted_participants.index(last_parced_student):]
 
-            if not incompleted_participants_tashkent:
-                incompleted_participants_tashkent = tashkent_students_usernames
+                print(f"Parsing participants info in {campus.capitalize()}")
+                for i, participant in enumerate(incompleted_participants):
+                    response_basic_info = requests.get(BASE_URL.format(f"/participants/{participant}"), headers=HEADERS)
+                    time.sleep(0.5)
+                    response_logtime = requests.get(BASE_URL.format(f"/participants/{participant}/logtime?date={date_to_use}"), headers=HEADERS)
 
-            db_path_tashkent = f"data_{intensive_month_selected}/participants/tashkent/participants.db"
-            last_parced_student = get_last_parced_student(db_path_tashkent)
-            if last_parced_student and last_parced_student in incompleted_participants_tashkent: 
-                index = incompleted_participants_tashkent.index(last_parced_student)
-                incompleted_participants_tashkent = incompleted_participants_tashkent[index:]
+                    if response_logtime.status_code == 200 and response_basic_info.status_code == 200:
+                        logtime = float(response_logtime.text)
+                        info = json.loads(response_basic_info.text)
+                        update_participant(db_path, participant, logtime=logtime, level=info['level'], exp=info['expValue'], exp_to_next_level=info['expToNextLevel'])
+                        print(f"Student {participant} has been updated in {campus.capitalize()}")
+                        if i > 0:
+                            set_last_parced_student(db_path, incompleted_participants[i - 1], 0)
+                        set_last_parced_student(db_path, participant, 1)
+                        print(f'{participant}, {logtime}, {info["level"]}, {info["expValue"]}, {info["expToNextLevel"]}')
+                        time.sleep(1)
 
-            print("Parsing participants info in Tashkent")
-            for i in range(len(incompleted_participants_tashkent)):  # Iterate through students (usernames)
-                response_basic_info = requests.get(BASE_URL.format(f"/participants/{incompleted_participants_tashkent[i]}"), headers=HEADERS)
-                time.sleep(0.5)
-                response_logtime = requests.get(BASE_URL.format(f"/participants/{incompleted_participants_tashkent[i]}/logtime?date={date_to_use}"), headers=HEADERS)
+                if get_last_parced_student(db_path) == incompleted_participants[-1]:
+                    set_last_parced_student(db_path, incompleted_participants[-1], 0)
 
-                if response_logtime.status_code == 200 and response_basic_info.status_code == 200:
-                    logtime = float(response_logtime.text)
-
-
-                    response_basic_info_json = json.loads(response_basic_info.text)
-                    level = response_basic_info_json['level']
-                    exp_value = response_basic_info_json['expValue']
-                    exp_to_next_level = response_basic_info_json['expToNextLevel']
-
-                    db_path_tashkent
-                    # Update the database
-                    update_participant(db_path_tashkent, incompleted_participants_tashkent[i], logtime=logtime, level=level, exp=exp_value, exp_to_next_level=exp_to_next_level)
-                    print(f"Student {incompleted_participants_tashkent[i]} has been updated in Tashkent")
-                    if i > 0:
-                        set_last_parced_student(db_path_tashkent, incompleted_participants_tashkent[i - 1], 0)
-                    
-                    set_last_parced_student(db_path_tashkent, incompleted_participants_tashkent[i], 1)
-                    print(f'{incompleted_participants_tashkent[i]}, {logtime}, {level}, {exp_value}, {exp_to_next_level}')
-
-                    time.sleep(1)
-
-            incompleted_participants_samarkand = get_incompleted_participants("samarkand")
-
-            if not incompleted_participants_samarkand:
-                incompleted_participants_samarkand = samarkand_students_usernames
-
-
-            db_path_samarkand = f"data_{intensive_month_selected}/participants/samarkand/participants.db"
-            last_parced_student = get_last_parced_student(db_path_samarkand)
-
-            if last_parced_student and last_parced_student in incompleted_participants_samarkand:  
-                index = incompleted_participants_samarkand.index(last_parced_student)
-                incompleted_participants_samarkand = incompleted_participants_samarkand[index:]
-
-            print("Parsing participants info in Samarkand")
-            for i in range(len(incompleted_participants_samarkand)):  
-                response_basic_info = requests.get(BASE_URL.format(f"/participants/{incompleted_participants_samarkand[i]}"), headers=HEADERS)
-                time.sleep(0.5)
-                response_logtime = requests.get(BASE_URL.format(f"/participants/{incompleted_participants_samarkand[i]}/logtime?date={date_to_use}"), headers=HEADERS)
-
-                if response_logtime.status_code == 200 and response_basic_info.status_code == 200:
-                    logtime = float(response_logtime.text)
-
-                    response_basic_info_json = json.loads(response_basic_info.text)
-                    level = response_basic_info_json['level']
-                    exp_value = response_basic_info_json['expValue']
-                    exp_to_next_level = response_basic_info_json['expToNextLevel']
-
-                    update_participant(db_path_samarkand, incompleted_participants_samarkand[i], logtime=logtime, level=level, exp=exp_value, exp_to_next_level=exp_to_next_level)
-                    print(f"Student {incompleted_participants_samarkand[i]} has been updated in Samarkand")
-                    if i > 0:
-                        set_last_parced_student(db_path_samarkand, incompleted_participants_samarkand[i - 1], 0)
-
-                    set_last_parced_student(db_path_samarkand, incompleted_participants_samarkand[i], 1)
-                    print(f'{incompleted_participants_samarkand[i]}, {logtime}, {level}, {exp_value}, {exp_to_next_level}')
-
-                    time.sleep(1)
-            
-            last_parced_student = get_last_parced_student(db_path_tashkent)
-            if last_parced_student == incompleted_participants_tashkent[-1]:
-                set_last_parced_student(db_path_tashkent, last_parced_student, 0)
-            
-            last_parced_student = get_last_parced_student(db_path_samarkand)
-            if last_parced_student == incompleted_participants_samarkand[-1]:
-                set_last_parced_student(db_path_samarkand, last_parced_student, 0)
-            
+                parse_participants("tashkent", tashkent_students_usernames)
+                parse_participants("samarkand", samarkand_students_usernames)
 
         except Exception as e:
             raise Exception(f"There was a problem during parsing from the api {e}")
-        
 
 def parse_personal_stats(access_token, intensive_month_selected):
     HEADERS = {

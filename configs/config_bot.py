@@ -1,3 +1,7 @@
+import os
+
+from dotenv import load_dotenv
+
 TASKS_INTENSIVE_BOT = {
     # FIRST WEEK
     'T01D01': 19153,
@@ -61,9 +65,13 @@ FOURTH_WEEK_INTENSIVE = {
     'E04D26 (exam)': 19459,
 }
 
-TOKEN = '8180010320:AAF7CF6M9BFeVnJu78XfAXpBvz6n7Nq786k' 
-TELEGRAPH_TOKEN = 'b0994b00bcab357cdb5a579123e57c7484db31abe61e06d83775bb4abe6d'
-TOKEN_ADMIN_BOT = '7576903606:AAHWaZRnbmn4GWLEvZGnBU2mRYqn7G7rvc8'
+
+
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
+
+TOKEN = os.getenv('MAIN_BOT_TOKEN')
+TELEGRAPH_TOKEN = os.getenv('TELEGRAPH_TOKEN')
+TOKEN_ADMIN_BOT = os.getenv('TOKEN_ADMIN_BOT') 
 
 
 KEYBOARDS = {
@@ -237,7 +245,6 @@ KEYBOARDS = {
 }
 
 
-XXX = "0836"
 
 MAKE_CONTENT = {
     "title": {
