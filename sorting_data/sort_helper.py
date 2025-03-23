@@ -27,14 +27,14 @@ def populate_students_exam_progress(db_path, students):
 
 
 
-def sort_students_exam_progress(db_path, campus):
+def sort_students_exam_progress(db_path, campus, intensive_month_selected):
     students = get_all_active_students_by_exp(db_path)
 
     if not students:
         print("No students found in the database.")
         return None
 
-    exams = {"E01D05": "1_week", "E02D12": "2_week", "E03D19": "3_week"}
+    exams = {"E01D05": "1_week", "E02D12": "2_week"}
     student_progress = {}
 
     # Create database and table if not exists
@@ -45,9 +45,7 @@ def sort_students_exam_progress(db_path, campus):
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             student_username TEXT UNIQUE,
             E01D05 INTEGER,
-            E02D12 INTEGER,
-            E03D19 INTEGER,
-            E04D26 INTEGER
+            E02D12 INTEGER
         )
     """)
     conn.commit()
@@ -132,7 +130,6 @@ def sort_personal_stats(db_path, campus, target_student):
             
 
         
-
         results[key_name] = {  # Store results for each key
             "rank": student_rank,
             "percent_more": percent_more,

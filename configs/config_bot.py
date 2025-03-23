@@ -123,9 +123,9 @@ KEYBOARDS = {
         #     "uzbek": "🏫 Kampus: {campus}\n\n✅ Kampusga faol tashrif buyuruvchilar: {num_students} dan {num_active_students}\n\nAgar tugmalar ishlamasa\, iltimos\, /start kiriting" 
         # },
         "caption_during_intensive": {  
-            "english": "🏫 Campus: {campus}\n\n✅ Actively visiting the campus: {num_active_students} out of {num_students}\n\n🧑🏻‍🎓 Best student in the campus: {student} \( Level {level} \| {exp} exp \)\n\n If the buttons are not working, please enter /start",  
-            "russian": "🏫 Кампус: {campus}\n\n✅ Активно посещают кампус: {num_active_students} из {num_students}\n\n🧑🏻‍🎓 Лучший студент в кампусе: {student} \( {level} уровень \| {exp} exp \)\n\nЕсли кнопки не жмуться введите /start", 
-            "uzbek": "🏫 Kampus: {campus}\n\n✅ Kampusga faol tashrif buyuruvchilar: {num_students} dan {num_active_students}\n\n🧑🏻‍🎓 Kampusda eng yaxshi talaba: {student} \( {level} daraja \| {exp} tajriba \)\n\nAgar tugmalar ishlamasa\, iltimos\, /start kiriting" 
+            "english": "🏫 Campus: {campus}\n\n✅ Actively visiting the campus: {num_active_students} out of {num_students}\n\n🧑🏻‍🎓 Best student in the campus: {student} \( Level {level} {lvl_percent}% \)\n\n If the buttons are not working, please enter /start",  
+            "russian": "🏫 Кампус: {campus}\n\n✅ Активно посещают кампус: {num_active_students} из {num_students}\n\n🧑🏻‍🎓 Лучший студент в кампусе: {student} \( {level} уровень {lvl_percent}% \)\n\nЕсли кнопки не жмуться введите /start", 
+            "uzbek": "🏫 Kampus: {campus}\n\n✅ Kampusga faol tashrif buyuruvchilar: {num_students} dan {num_active_students}\n\n🧑🏻‍🎓 Kampusda eng yaxshi talaba: {student} \( {level} daraja {lvl_percent}% \)\n\nAgar tugmalar ishlamasa\, iltimos\, /start kiriting" 
         },
         "caption_out_of_intensive": {
             "english": "🏫 Campus: {campus}\n\n🙃The last intensive is over\. Waiting for the start of the new one\n\n🫠You can view reports on past intensives by clicking the \"Past Intensives\" button\n\nIf the buttons are not working, please enter /start",  
@@ -176,6 +176,16 @@ KEYBOARDS = {
             "english": {"text":"Show the report of the other campus", "callback_data" : "show_other_campus_stats"},
             "russian": {"text":"Показать отчёт по другому кампусу", "callback_data" : "show_other_campus_stats"},
             "uzbek": {"text":"Boshqa kampus bo'yicha hisobotni ko'rsatish", "callback_data" : "show_other_campus_stats"},
+        },
+        "show_autotests_failed_students" : {
+            "english": {"text":"Show the graph who failed on autotest", "callback_data" : "show_autotest_failed_graph"},
+            "russian": {"text":"Показать график провалившихся на автотесте", "callback_data" : "show_autotest_failed_graph"},
+            "uzbek": {"text":"Autotestdan o'ta olmaganlar grafigini ko'rsatish", "callback_data" : "show_autotest_failed_graph"},
+        },
+        "autotest_graph_has_not_been_done" : {
+            "english": "Graph is being made",
+            "russian": "График скоро будет готов",
+            "uzbek": "Graphic tez orada tayyor bo'ladi",
         },
     },
     "show_profile" : {

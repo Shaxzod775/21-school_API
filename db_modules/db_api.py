@@ -6,6 +6,7 @@ sys.path.append("..")
 import sqlite3
 import datetime
 from configs.config_api import *
+import time
 
 def init_table_tasks():
     try:
@@ -191,7 +192,7 @@ def init_table_participants(campus, db_path):
                             logtime INTEGER,
                             level INTEGER,
                             exp INTEGER,
-                            exp_to_next_level INTEGER,
+                            lvl_percent INTEGER,
                             last_parced INTEGER
                         )''')
 
@@ -203,12 +204,12 @@ def init_table_participants(campus, db_path):
         if conn: #Ensure conn is not None before closing
             conn.close()
 
-def create_participant(db_path, campus, student, logtime=0, level=0, exp=0, exp_to_next_level=0, last_parced=0):
+def create_participant(db_path, campus, student, logtime=0, level=0, exp=0, lvl_percent=0, last_parced=0):
     try:
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
-        cursor.execute("INSERT INTO participants (student, logtime, level, exp, exp_to_next_level, last_parced) VALUES (?, ?, ?, ?, ?, ?)", (student, logtime, level, exp, exp_to_next_level, last_parced))
+        cursor.execute("INSERT INTO participants (student, logtime, level, exp, lvl_percent, last_parced) VALUES (?, ?, ?, ?, ?, ?)", (student, logtime, level, exp, lvl_percent, last_parced))
         conn.commit()
         print(f"Participant {student} created for {campus}.")
         return True # Indicate success
@@ -223,7 +224,7 @@ def create_participant(db_path, campus, student, logtime=0, level=0, exp=0, exp_
             conn.close()
 
 
-def update_participant(db_path, student, logtime=None, level=None, exp=None, exp_to_next_level=None, last_parced=0):
+def update_participant(db_path, student, logtime=None, level=None, exp=None, lvl_percent=None, last_parced=0):
     try:
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
@@ -240,9 +241,9 @@ def update_participant(db_path, student, logtime=None, level=None, exp=None, exp
         if exp is not None:
             updates.append("exp = ?")
             values.append(exp)
-        if exp_to_next_level is not None:
-            updates.append("exp_to_next_level = ?")
-            values.append(exp_to_next_level)
+        if lvl_percent is not None:
+            updates.append("lvl_percent = ?")
+            values.append(lvl_percent)
 
         updates.append("last_parced = ?")
         values.append(last_parced)
@@ -270,7 +271,7 @@ def get_participant(db_path, campus, student):
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
-        cursor.execute("SELECT logtime, level, exp, exp_to_next_level FROM participants WHERE student = ?", (student,))
+        cursor.execute("SELECT logtime, level, exp, lvl_percent FROM participants WHERE student = ?", (student,))
         participant_data = cursor.fetchone()
 
         if participant_data:
@@ -336,12 +337,12 @@ def get_best_student(db_path):
             conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
 
-            cursor.execute("SELECT student, level, exp FROM participants WHERE exp = (SELECT MAX(exp) FROM participants)")
+            cursor.execute("SELECT student, level, exp, lvl_percent FROM participants WHERE exp = (SELECT MAX(exp) FROM participants)")
             participant_data = cursor.fetchone()
 
             if participant_data:
-                student, level, exp = participant_data
-                return [student, level,  exp] # Return as a dictionary
+                student, level, exp, lvl_percent = participant_data
+                return [student, level, exp, lvl_percent] # Return as a dictionary
             else:
                 return None  # Return None if participant not found
 
@@ -428,7 +429,7 @@ def populate_participants(db_path, campus, students):
 
 def set_last_parced_student(db_path, student, last_parced):
     try:
-        result = update_participant(db_path=db_path, student=student, logtime=None, level=None, exp=None, exp_to_next_level=None, last_parced=last_parced)
+        result = update_participant(db_path=db_path, student=student, logtime=None, level=None, exp=None, lvl_percent=None, last_parced=last_parced)
         if result:
             return True
     except sqlite3.Error as e:
@@ -476,13 +477,15 @@ def drop_table(table):
         conn.close()
 
 
-def init_table_for_task(db_path):
+def init_table_for_task(db_path, style_mem_table=None):
     if not os.path.exists(f"{db_path}"):
         db_directory = "/".join(db_path.split("/")[:-1])
         if not os.path.exists(db_directory):
             os.mkdir(db_directory)
         with open(db_path, "w") as file:
             pass
+
+    time.sleep(2)
 
     try:
         conn = sqlite3.connect(db_path)
@@ -493,23 +496,71 @@ def init_table_for_task(db_path):
                             id INTEGER PRIMARY KEY AUTOINCREMENT,
                             student TEXT UNIQUE NOT NULL,
                             title TEXT,
-                            type TEXT,
                             status TEXT,
+                            reason TEXT,
+                            given_exp TEXT,
                             final_score TEXT
                         )''')
 
         conn.commit()
-        print(f"Table '{task}' created or already exists.")  
+        print(f"Table '{task}' created or already exists.")
+        
+        if style_mem_table is not None:
+            cursor.execute(f'''CREATE TABLE IF NOT EXISTS styleValgrind (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            clang_format INTEGER,
+                            valgrind INTEGER
+                        )''')
+
+            conn.commit()
+            print(f"Table for styleValgrind created or already exists.")
+
+
     except sqlite3.Error as e:
         raise Exception(f"An error occured while creating the table. Error: {e}")
+    finally:
+        conn.close
+    
+def update_styleValgrind(db_path, clang_format=None, valgrind=None):
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        updates = []
+        values = []
+
+        if clang_format is not None:
+            updates.append("clang_format = ?")
+            values.append(clang_format)
+        if valgrind is not None:
+            updates.append("valgrind = ?")
+            values.append(valgrind)
+
+        if updates:  
+            sql = f"UPDATE styleValgrind SET {', '.join(updates)} WHERE id = 1"
+            cursor.execute(sql, tuple(values))
+            conn.commit()
+            print("Clang format and valgrind table has been successfully updated!")
+            return cursor.rowcount > 0 
+        else:
+            return False 
+        
+    except sqlite3.Error as e:
+        conn.rollback()
+        print(f"Error updating style valgrind table: {e}")
+        return False
+    finally:
+        if conn:
+            conn.close()
+    
     
 
-def create_task_result(db_path, student, title, type, status, final_score=None):
+def create_task_result(db_path, student, title=None, status=None, reason=None, given_exp=None, final_score=None):
     try:
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         task = db_path.split("/")[-1].split(".")[0]
-        cursor.execute(f"INSERT INTO {task} (student, title, type, status, final_score) VALUES (?, ?, ?, ?, ?)", (student, title, type, status, final_score))
+        cursor.execute(f"INSERT INTO {task} (student, title, status, reason, given_exp, final_score) VALUES (?, ?, ?, ?, ?, ?)", (student, title, status, reason, given_exp, final_score))
         conn.commit()
         print(f"Task result has been created for student {student}")
         return True  # Indicate success
@@ -521,7 +572,7 @@ def create_task_result(db_path, student, title, type, status, final_score=None):
         if conn:
             conn.close()
 
-def update_task_result(db_path, student, title=None, type=None, status=None, final_score=None):
+def update_task_result(db_path, student, title=None, status=None, reason=None, given_exp=None, final_score=None):
     try:
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
@@ -533,25 +584,28 @@ def update_task_result(db_path, student, title=None, type=None, status=None, fin
         if title is not None:
             updates.append("title = ?")
             values.append(title)
-        if type is not None:
-            updates.append("type = ?")
-            values.append(type)
         if status is not None:
             updates.append("status = ?")
             values.append(status)
+        if reason is not None:
+            updates.append("reason = ?")
+            values.append(reason)
+        if given_exp is not None:
+            updates.append("given_exp = ?")
+            values.append(given_exp)
         if final_score is not None:
             updates.append("final_score = ?")
             values.append(final_score)
 
-        if updates:  # Check if there are any updates to perform
-            sql = f"UPDATE {task} SET {', '.join(updates)} WHERE student = ?"  # Added title to WHERE clause
-            values.extend([student,]) #Added student and title
+        if updates:  
+            sql = f"UPDATE {task} SET {', '.join(updates)} WHERE student = ?" 
+            values.extend([student,]) 
             cursor.execute(sql, tuple(values))
             conn.commit()
-            return cursor.rowcount > 0 #Return True if any row was updated
+            return cursor.rowcount > 0 
         else:
-            return False  # No updates to perform
-
+            return False 
+        
     except sqlite3.Error as e:
         conn.rollback()
         print(f"Error updating task result: {e}")
@@ -565,10 +619,10 @@ def get_student_task_result(db_path, student):
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         task = db_path.split("/")[-1].split(".")[0]
-        cursor.execute(f"SELECT type, status, final_score FROM {task} WHERE student = ?", (student,))
+        cursor.execute(f"SELECT status, final_score FROM {task} WHERE student = ?", (student,))
         result = cursor.fetchone()
         if result:
-            return {"type": result[0], "status": result[1], "final_score": result[2]}
+            return {"status": result[0], "final_score": result[1]}
         else:
             return None
     except sqlite3.Error as e:
@@ -585,8 +639,7 @@ def get_all_students_task_results(db_path):
         cursor = conn.cursor()
         task = db_path.split("/")[-1].split(".")[0]
 
-        # Use parameterization to prevent SQL injection and handle missing tables correctly
-        cursor.execute(f"SELECT student, title, type, status, final_score FROM {task}")  # No parameters needed here
+        cursor.execute(f"SELECT student, title, status, reason, given_exp, final_score FROM {task}") 
 
         results = cursor.fetchall()
 
@@ -596,13 +649,14 @@ def get_all_students_task_results(db_path):
                 task_results.append({
                     "student": row[0],
                     "title": row[1],
-                    "type": row[2],
-                    "status": row[3],
-                    "final_score": row[4]
+                    "status": row[2],
+                    "reason": row[3],
+                    "given_exp": row[4],
+                    "final_score": row[5]
                 })
             return task_results
         else:
-            return []  # Return an empty list if no results or table not found
+            return []  
 
     except sqlite3.Error as e:
         print(f"Error getting task results: {e}")
@@ -635,10 +689,44 @@ def get_student_task_result_by_status(db_path, status):
             conn.close()
 
 
-def populate_task_results(db_path, students):  # Changed student_data to students
+def create_styleValgrind_result(db_path, clang_format=0, valgrind=0):
+    try:
+        conn =  sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        cursor.execute(f'''INSERT INTO styleValgrind (clang_format, valgrind) VALUES ({clang_format}, {valgrind})''')
+        conn.commit()
+        print("Columns clang_format, valgrind in styleValgrind has been filled")
+        return True
+    except Exception as e:
+        print(f"There was an error during creating a styleValgrind result: {str(e)}")
+
+def get_stylevValgrind_result(db_path):
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT clang_format, valgrind FROM styleValgrind WHERE id = 1")
+        result = cursor.fetchone()
+        if result:
+            return {"clang_format": result[0], "valgrind": result[1]}
+        else:
+            return None
+    except sqlite3.Error as e:
+        print(f"Error getting task result: {e}")
+        return None
+    finally:
+        if conn:
+            conn.close()
+
+ 
+
+
+def populate_task_results(db_path, students, clang_format=0, valgrind=0):  # Changed student_data to students
+    if not get_stylevValgrind_result(db_path):
+        create_styleValgrind_result(db_path, clang_format, valgrind)
     for student in students:
         if not get_student_task_result(db_path, student): 
-            create_task_result(db_path, student, None, None, None)  # Other fields are None by default
+            create_task_result(db_path, student, None, None, None, None, None)  # Other fields are None by default
         else:
             print(f"Task result for {student} already exists. Skipping.")
 
@@ -883,12 +971,14 @@ def check_being_updated(db_path, campus):
             conn.close()
 
 
+
+
 def get_all_participants_for_overall(db_path):
     try:
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
-        cursor.execute("SELECT student, logtime, level, exp, exp_to_next_level FROM participants")
+        cursor.execute("SELECT student, logtime, level, exp, lvl_percent FROM participants")
         participant_data = cursor.fetchall()
 
         if participant_data:

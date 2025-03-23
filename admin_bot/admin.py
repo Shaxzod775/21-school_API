@@ -23,6 +23,7 @@ MEDIA_GROUP_IMAGE_DIR = "media_group_images"
 
 BROADCAST_CHOICE, AWAITING_MESSAGE, AWAITING_MEDIA_GROUP, CONFIRM_PREVIOUS_MEDIA_GROUP = range(4)
 CHECK_SUBSCRIPTION_LOGIN, CHECK_SUBSCRIPTION_PROJECT = range(2)
+AWAITING_AUTH_CODE_TASK, AWAITING_AUTH_CODE_STUDENTS = range(2)
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -293,6 +294,17 @@ async def handle_broadcast_message(update: Update, context: ContextTypes.DEFAULT
             await context.bot.send_message(chat_id=update.effective_chat.id, text="Медиагруппа получена.")
             await preview_media_group(update, context) # Directly to preview after receiving media group
 
+    elif state == AWAITING_AUTH_CODE_STUDENTS:
+        context.user_data['auth_code'] = message.text
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Код авторизации получен.")
+        await start_parsing_students(update, context)
+
+    elif state == AWAITING_AUTH_CODE_TASK:
+        context.user_data['auth_code'] = message.text
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Код авторизации получен.")
+        await start_parsing_task_data(update, context)
+        # Proceed with the next steps after receiving the auth code
+
 
 async def process_broadcast_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Sends confirmation message with buttons and displays the broadcast message."""
@@ -415,10 +427,12 @@ async def cleanup_media_files(context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def parse_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    await query.answer()  # Add await here
+    await query.answer()  
 
     if query.data == "parse_data":
         keyboard = [[InlineKeyboardButton(item['text'], callback_data=item['callback_data'])] for item in KEYBOARDS['button']['stats']['keyboard']["russian"]][:-1]
+
+        keyboard.append([InlineKeyboardButton("Парсить учеников", callback_data="parse_students")])
 
         reply_markup = InlineKeyboardMarkup(keyboard)
         context.user_data['previous_markup'] = query.message.reply_markup
@@ -464,21 +478,76 @@ async def parse_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         await query.edit_message_reply_markup(reply_markup=reply_markup)
 
     elif re.match(r"^T\d{2}D\d{2}$|^E\d{2}D\d{2}$|^P\d{2}D\d{2}$", query.data):
-        script_path = os.path.join(os.path.dirname(__file__), "../api/main.py")
-        main_directory = os.path.dirname(script_path)
+        context.user_data['task'] = query.data
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Введите код авторизации:")
+        context.user_data['state'] = AWAITING_AUTH_CODE_TASK
 
-        original_directory = os.getcwd()
-        try:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text="Скрипт начал работу...")
+        # script_path = os.path.join(os.path.dirname(__file__), "../api/main.py")
+        # main_directory = os.path.dirname(script_path)
 
-            os.chdir(main_directory)
-            os.system(f"wsl.exe -e bash -c 'cd {main_directory} && source ../venv/bin/activate && python3 main.py {query.data} march'")
+        # original_directory = os.getcwd()
+        # try:
+        #     await context.bot.send_message(chat_id=update.effective_chat.id, text="Скрипт начал работу...")
 
-            await context.bot.send_message(chat_id=update.effective_chat.id, text="Скрипт успешно завершен.")
-        except Exception as e:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Ошибка при выполнении скрипта: {e}")
-        finally:
-            os.chdir(original_directory)
+        #     os.chdir(main_directory)
+        #     os.system(f"wsl.exe -e bash -c 'cd {main_directory} && source ../venv/bin/activate && python3 main.py {query.data} march'")
+
+        #     await context.bot.send_message(chat_id=update.effective_chat.id, text="Скрипт успешно завершен.")
+        # except Exception as e:
+        #     await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Ошибка при выполнении скрипта: {e}")
+        # finally:
+        #     os.chdir(original_directory)
+
+    elif query.data == "parse_students":
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Введите код авторизации:")
+        context.user_data['state'] = AWAITING_AUTH_CODE_STUDENTS
+
+
+
+
+async def start_parsing_task_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    script_path = os.path.join(os.path.dirname(__file__), "../api/new_api.py")
+    main_directory = os.path.dirname(script_path)
+
+    original_directory = os.getcwd()
+
+    task = context.user_data.get('task')
+
+    try:
+        auth_code = context.user_data.get('auth_code')
+
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Парсинг учеников начался")
+
+        os.chdir(main_directory)
+        os.system(f"python .\\new_api.py {task.upper()} march {auth_code}")
+
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Ученики успешно спарсены")
+    except Exception as e:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Ошибка при выполнении скрипта парсинга учеников: {e}")
+    finally:
+        os.chdir(original_directory)
+
+
+
+async def start_parsing_students(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    script_path = os.path.join(os.path.dirname(__file__), "../api/new_api.py")
+    main_directory = os.path.dirname(script_path)
+
+    original_directory = os.getcwd()
+
+    try:
+        auth_code = context.user_data.get('auth_code')
+
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Парсинг учеников начался")
+
+        os.chdir(main_directory)
+        os.system(f"python .\\new_api.py parse_students march {auth_code}")
+
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Ученики успешно спарсены")
+    except Exception as e:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Ошибка при выполнении скрипта парсинга учеников: {e}")
+    finally:
+        os.chdir(original_directory)
 
 
 def main_bot() -> None:
@@ -515,7 +584,8 @@ def main_bot() -> None:
 
 
 
-    application.add_handler(CallbackQueryHandler(parse_data, pattern=r"^parse_data$|^stats_intensive_week_1$|^stats_intensive_week_2$|^stats_intensive_week_3$|^stats_intensive_week_4$|T\d{2}D\d{2}$|^E\d{2}D\d{2}$|^P\d{2}D\d{2}$"))
+    application.add_handler(CallbackQueryHandler(parse_data, pattern=r"^parse_students|parse_data$|^stats_intensive_week_1$|^stats_intensive_week_2$|^stats_intensive_week_3$|^stats_intensive_week_4$|T\d{2}D\d{2}$|^E\d{2}D\d{2}$|^P\d{2}D\d{2}$"))
+    application.add_handler(CallbackQueryHandler(start_parsing_students, pattern=r"^start_parsing_students$"))
 
     
 
@@ -523,7 +593,6 @@ def main_bot() -> None:
     # Message handler for broadcast messages (text, photo, media group)
     application.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, handle_broadcast_message))
 
-    # Start the bot
     application.run_polling()
 
 
