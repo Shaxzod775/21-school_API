@@ -51,23 +51,23 @@ def parse_student_info(url, username, password, auth_code, intensive_month_selec
                 password_field.send_keys(password)
                 button.click()
 
-                WebDriverWait(driver, 10).until(
-                    EC.url_contains("https://auth.sberclass.ru/auth/realms/EduPowerKeycloak/login-actions/authenticate?execution")
-                )
+                # WebDriverWait(driver, 10).until(
+                #     EC.url_contains("https://auth.sberclass.ru/auth/realms/EduPowerKeycloak/login-actions/authenticate?execution")
+                # )
 
-                print(driver.current_url)
+                # print(driver.current_url)
                
-                code_field = WebDriverWait(driver, 10).until(
-                    EC.presence_of_element_located((By.XPATH, "//input[@name='otp' and @type='text']"))
-                )
+                # code_field = WebDriverWait(driver, 10).until(
+                #     EC.presence_of_element_located((By.XPATH, "//input[@name='otp' and @type='text']"))
+                # )
 
-                code_field.click()
+                # code_field.click()
 
-                code_field.send_keys(auth_code)
+                # code_field.send_keys(auth_code)
 
-                button = driver.find_element(By.CLASS_NAME, "jss22").find_element(By.TAG_NAME, "button")
+                # button = driver.find_element(By.CLASS_NAME, "jss22").find_element(By.TAG_NAME, "button")
 
-                button.click()
+                # button.click()
 
                 WebDriverWait(driver, 10).until(
                     EC.url_to_be("https://edu.21-school.ru/")
@@ -101,29 +101,28 @@ def parse_student_info(url, username, password, auth_code, intensive_month_selec
                         incompleted_participants = incompleted_participants[index:]
 
                     print(f"Parsing participants info in {city.capitalize()}")
+                    
 
                     for i, participant in enumerate(incompleted_participants):
-                        print(f"Participant: {participant} is being parced")
                         driver.get(f"https://edu.21-school.ru/profile/{participant}/about")
 
-                        level = WebDriverWait(driver, 10).until(
+                        level = WebDriverWait(driver, 120).until(
                             EC.presence_of_element_located((By.XPATH, "//div[@data-testid='personalInfo.levelCode']"))
                         ).text[-1]
 
                         lvl_percent = driver.find_element(By.XPATH, "//div[@data-testid='personalInfo.experiencePercent']").text.replace("%", "")
                         exp = driver.find_element(By.XPATH, "//*[@data-testid='personalInfo.xp']").text.replace("XP", "")
-                        logtime = WebDriverWait(driver, 10).until(
+                        logtime = WebDriverWait(driver, 60).until(
                                 EC.presence_of_element_located((By.XPATH, "//div[@data-testid='attendanceWidget']"))
                         ).find_elements(By.XPATH, "./*")[1].find_elements(By.XPATH, "./*")[0].find_elements(By.XPATH, "./*")[-1].text
 
-                        # update_participant(db_path, participant, logtime=logtime, level=info['level'], exp=info['expValue'], exp_to_next_level=info['expToNextLevel'])
-                        update_participant(db_path, participant, logtime=logtime, level=level, exp=exp, lvl_percent=lvl_percent)
+                        update_participant(db_path, participant, logtime, level, exp, lvl_percent, 0)
                         if i > 0:
                             set_last_parced_student(db_path, incompleted_participants[i - 1], 0)
                         set_last_parced_student(db_path, participant, 1)
 
+                        # print(f"PRINTING HERE: {participant}, level: {level}, lvl_percent: {lvl_percent}%, exp: {exp} XP, logtime: {logtime}")
 
-                        print(f"{participant}, level: {level}, lvl_percent: {lvl_percent}%, exp: {exp} XP, logtime: {logtime}")
 
 
 
@@ -149,7 +148,7 @@ def parse_personal_stats(url, username, password, auth_code, intensive_month_sel
         time.sleep(5)
         if driver.current_url.startswith("https://auth.sberclass.ru"):
             try:
-                username_field = WebDriverWait(driver, 10).until(
+                username_field = WebDriverWait(driver, 60).until(
                     EC.presence_of_element_located((By.NAME, "username"))
                 )
                 password_field = driver.find_element(By.NAME, "password")
@@ -159,25 +158,25 @@ def parse_personal_stats(url, username, password, auth_code, intensive_month_sel
                 password_field.send_keys(password)
                 button.click()
 
-                WebDriverWait(driver, 10).until(
-                    EC.url_contains("https://auth.sberclass.ru/auth/realms/EduPowerKeycloak/login-actions/authenticate?execution")
-                )
+                # WebDriverWait(driver, 60).until(
+                #     EC.url_contains("https://auth.sberclass.ru/auth/realms/EduPowerKeycloak/login-actions/authenticate?execution")
+                # )
 
-                print(driver.current_url)
+                # print(driver.current_url)
                
-                code_field = WebDriverWait(driver, 10).until(
-                    EC.presence_of_element_located((By.XPATH, "//input[@name='otp' and @type='text']"))
-                )
+                # code_field = WebDriverWait(driver, 60).until(
+                #     EC.presence_of_element_located((By.XPATH, "//input[@name='otp' and @type='text']"))
+                # )
 
-                code_field.click()
+                # code_field.click()
 
-                code_field.send_keys(auth_code)
+                # code_field.send_keys(auth_code)
 
-                button = driver.find_element(By.CLASS_NAME, "jss22").find_element(By.TAG_NAME, "button")
+                # button = driver.find_element(By.CLASS_NAME, "jss22").find_element(By.TAG_NAME, "button")
 
-                button.click()
+                # button.click()
 
-                WebDriverWait(driver, 10).until(
+                WebDriverWait(driver, 30).until(
                     EC.url_to_be("https://edu.21-school.ru/")
                 )
 
@@ -200,14 +199,14 @@ def parse_personal_stats(url, username, password, auth_code, intensive_month_sel
                     for i, participant in enumerate(active_participants):
                         driver.get(f"https://edu.21-school.ru/profile/{participant}/about")
 
-                        level = WebDriverWait(driver, 30).until(
+                        level = WebDriverWait(driver, 120).until(
                             EC.presence_of_element_located((By.XPATH, "//div[@data-testid='personalInfo.levelCode']"))
                         ).text[-1]
 
                         lvl_percent = driver.find_element(By.XPATH, "//div[@data-testid='personalInfo.experiencePercent']").text.replace("%", "")
                         exp = driver.find_element(By.XPATH, "//*[@data-testid='personalInfo.xp']").text.replace("XP", "")
 
-                        logtime = WebDriverWait(driver, 10).until(
+                        logtime = WebDriverWait(driver, 120).until(
                                 EC.presence_of_element_located((By.XPATH, "//div[@data-testid='attendanceWidget']"))
                         ).find_elements(By.XPATH, "./*")[1].find_elements(By.XPATH, "./*")[0].find_elements(By.XPATH, "./*")[-1].text
 
@@ -217,6 +216,8 @@ def parse_personal_stats(url, username, password, auth_code, intensive_month_sel
                         )
 
                         see_all_projects_button.click()
+
+                        time.sleep(3)
 
                         tasks_statuses = [element.text for element in driver.find_elements(By.XPATH, "//span[@data-testid='projects.projectItem.status']")]
 
@@ -232,7 +233,7 @@ def parse_personal_stats(url, username, password, auth_code, intensive_month_sel
                         driver.get(f"https://edu.21-school.ru/profile/{participant}/achievements")
 
                         try:
-                            education_event = WebDriverWait(driver, 10).until(
+                            education_event = WebDriverWait(driver, 20).until(
                                 EC.presence_of_element_located((By.XPATH, "//*[contains(text(), 'Educational event')]"))
                             )
 
@@ -254,7 +255,7 @@ def parse_personal_stats(url, username, password, auth_code, intensive_month_sel
                             pass
                             
                         try:
-                            entertainment = WebDriverWait(driver, 10).until(
+                            entertainment = WebDriverWait(driver, 20).until(
                                 EC.presence_of_element_located((By.XPATH, "//*[contains(text(), 'Entertainment event')]"))
                             )
                             if entertainment:
@@ -332,20 +333,20 @@ def get_specific_project_complеtion_info(url, username, password, intensive_mon
                 password_field.send_keys(password)
                 button.click()
 
-                WebDriverWait(driver, 10).until(
-                    EC.url_contains("https://auth.sberclass.ru/auth/realms/EduPowerKeycloak/login-actions/authenticate?execution")
-                )
+                # WebDriverWait(driver, 10).until(
+                #     EC.url_contains("https://auth.sberclass.ru/auth/realms/EduPowerKeycloak/login-actions/authenticate?execution")
+                # )
 
-                print(driver.current_url)
+                # print(driver.current_url)
 
-                code_field = WebDriverWait(driver, 10).until(
-                    EC.presence_of_element_located((By.XPATH, "//input[@name='otp' and @type='text']"))
-                )
-                code_field.click()
-                code_field.send_keys(auth_code)
+                # code_field = WebDriverWait(driver, 10).until(
+                #     EC.presence_of_element_located((By.XPATH, "//input[@name='otp' and @type='text']"))
+                # )
+                # code_field.click()
+                # code_field.send_keys(auth_code)
 
-                button = driver.find_element(By.CLASS_NAME, "jss22").find_element(By.TAG_NAME, "button")
-                button.click()
+                # button = driver.find_element(By.CLASS_NAME, "jss22").find_element(By.TAG_NAME, "button")
+                # button.click()
 
                 WebDriverWait(driver, 10).until(
                     EC.url_to_be("https://edu.21-school.ru/")
@@ -455,6 +456,8 @@ def get_specific_project_complеtion_info(url, username, password, intensive_mon
                         EC.presence_of_element_located((By.XPATH, "//*[text()='See all projects']"))
                     )
                     see_all_projects_button.click()
+
+                    time.sleep(3)
 
                     task_button = WebDriverWait(driver, 10).until(
                         EC.presence_of_element_located((By.XPATH, f"//*[text()='{task}']"))
@@ -822,7 +825,7 @@ def plot_exam_progress(campus, intensive_month_selected):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
-    cursor.execute("SELECT student_username, E01D05, E02D12 FROM exams_progress")
+    cursor.execute("SELECT student_username, E01D05, E02D12, E03D19 FROM exams_progress")
     data = cursor.fetchall()
 
     conn.close()
@@ -831,13 +834,13 @@ def plot_exam_progress(campus, intensive_month_selected):
     most_progress_students = []
     biggest_fall_students = []
 
-    for student, e01d05, e02d12 in data:
-        scores = [e01d05, e02d12,]
+    for student, e01d05, e02d12, e03d19 in data:
+        scores = [e01d05, e02d12, e03d19]
         if None in scores:
             continue
 
-        progress = e02d12 - e01d05
-        fall = e01d05 - e02d12
+        progress = e02d12 - e03d19
+        fall = e03d19 - e02d12
         instability = max(scores) - min(scores)
 
         unstable_students.append((student, instability, scores))
@@ -851,7 +854,7 @@ def plot_exam_progress(campus, intensive_month_selected):
 
     def plot_students(students, title, filename):
         for student, _, scores in students:
-            exams = ["E01D05", "E02D12"]
+            exams = ["E01D05", "E02D12", "E03D19"]
             plt.plot(exams, scores, marker='o', label=student)
 
         plt.xlabel('Exams')
@@ -888,7 +891,6 @@ def main():
 
 
         if sys.argv[1] == "parse_students":
-            
             parse_student_info(website_url, username, password, auth_code, intensive_month_selected)
             parse_personal_stats(website_url, username, password, auth_code, intensive_month_selected)
             update_read_databases()

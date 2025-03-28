@@ -225,6 +225,8 @@ def create_participant(db_path, campus, student, logtime=0, level=0, exp=0, lvl_
 
 
 def update_participant(db_path, student, logtime=None, level=None, exp=None, lvl_percent=None, last_parced=0):
+    if logtime:
+        print(f"{student}, level: {level}, lvl_percent: {lvl_percent}%, exp: {exp} XP, logtime: {logtime}")
     try:
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
