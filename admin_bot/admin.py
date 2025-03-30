@@ -166,6 +166,7 @@ async def start_send_media_group(update: Update, context: ContextTypes.DEFAULT_T
 async def confirm_previous_media_group(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Loads and previews the previous media group."""
     query = update.callback_query
+    context.user_data['broadcast_type'] = 'media_group'
     await query.answer()
     await load_previous_media_group(context)
     await preview_media_group(update, context) # Proceed to preview

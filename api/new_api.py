@@ -358,7 +358,8 @@ def get_specific_project_complеtion_info(url, username, password, intensive_mon
                 print(f"Login failed: {str(e)}") 
                 return
             
-        for campus in ["tashkent", "samarkand"]:
+        # for campus in ["tashkent", "samarkand"]:
+        for campus in ["tashkent"]:
             db_path = f"data_{intensive_month_selected}/tasks/{campus}/{week}/{task}/{task}.db"
             all_students = get_all_students(f"data_{intensive_month_selected}/participants/{campus}/participants.db")
 
@@ -636,11 +637,11 @@ def plot_failed_students(intensive_month_selected, task):
                 'Project failed': 'Project was completed poorly',
                 'The project has been completed by surrender': 'The project has been completed by surrender',
                 'Subscription for the project is already unavailable': 'The students did not subscribe to the project',
-                'You forgot to subscribe to the exam event': 'The students forgot to subscrive to the exam event',
+                'You forgot to subscribe to the exam event': 'The students forgot to subscribe to the exam event',
+                'You forgot to subscribe to the project and exam event': 'The students forgot to subscribe to the exam event',
                 'You missed the exam': 'The students missed the exam',
                 'The exam is failed': 'The exam is failed',
                 'The exam is failed due to surrender': 'The exam is failed due to surrender',
-                'You forgot to subscribe to the exam event': 'The students forgot to subscribe to the exam',
                 'valgrind': 'valgrind',
                 'clang-format': 'clang-format'
             },
@@ -653,6 +654,7 @@ def plot_failed_students(intensive_month_selected, task):
                 'The project has been completed by surrender': 'Ученики нажали \'Give up project\'',
                 'Subscription for the project is already unavailable': 'Ученики не подписались на проект',
                 'You forgot to subscribe to the exam event': 'Не зарегистрировались на экзамен',
+                'You forgot to subscribe to the project and exam event': 'Не зарегистрировались на экзамен',
                 'You missed the exam': 'Пропустили экзамен',
                 'The exam is failed': 'Экзамен провален',
                 'The exam is failed due to surrender': 'Нажали \'Give up\' на экзамене',
@@ -668,6 +670,7 @@ def plot_failed_students(intensive_month_selected, task):
                 'The project has been completed by surrender': 'Loyiha topshirildi',
                 'Subscription for the project is already unavailable': 'Talabalar loyihaga obuna bo\'lishmadi',
                 'You forgot to subscribe to the exam event': 'Imtihonga registir kilinmagan',
+                'You forgot to subscribe to the project and exam event': 'Imtihonga registir kilinmagan',
                 'You missed the exam': 'Imtihonga kelmagan',
                 'The exam is failed': 'Imtihondan otolmadi',
                 'The exam is failed due to surrender': '\'Give up\' boskan',
@@ -690,8 +693,8 @@ def plot_failed_students(intensive_month_selected, task):
             except sqlite3.Error as e:
                 print(f"There was an error during parsing from task database {e}")
 
-        print(f"Clang-format {clang_format}")
-        print(f"Valgrind {valgrind}")
+            print(f"Clang-format {clang_format}")
+            print(f"Valgrind {valgrind}")
 
         for lang, translation in translations.items():
             translated_labels = [translation[label] for label in labels]
