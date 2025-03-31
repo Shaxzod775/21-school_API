@@ -189,6 +189,7 @@ def parse_personal_stats(url, username, password, auth_code, intensive_month_sel
             try:                
                 def update_stats(campus, usernames):
                     db_path = f"data_{intensive_month_selected}/participants/{campus}/personal_stats.db"
+                    # active_participants = get_active_student_list(f"data_{intensive_month_selected}/participants/{campus}/participants.db") or usernames
                     active_participants = get_active_student_list(f"data_{intensive_month_selected}/participants/{campus}/participants.db") or usernames
                     last_parced_student = get_last_parced_student_personal_stats(db_path)
                     if last_parced_student in active_participants:
@@ -894,7 +895,7 @@ def main():
 
 
         if sys.argv[1] == "parse_students":
-            parse_student_info(website_url, username, password, auth_code, intensive_month_selected)
+            # parse_student_info(website_url, username, password, auth_code, intensive_month_selected)
             parse_personal_stats(website_url, username, password, auth_code, intensive_month_selected)
             update_read_databases()
 
