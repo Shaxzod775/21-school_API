@@ -127,7 +127,7 @@ async def show_main_options(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     except KeyError as e:
         raise KeyError(f"Wrong language has been entered {e}")
 
-    student, level, exp = get_best_student(f"../api/data_{intensive_month_selected}/participants/{campus}/participants.db")
+    student, level, exp, lvl_percent = get_best_student(f"../api/data_{intensive_month_selected}/participants/{campus}/participants.db")
 
     num_active_students = get_active_students(f"../api/data_{intensive_month_selected}/participants/{campus}/participants.db")
   
@@ -151,7 +151,7 @@ async def show_main_options(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             num_students=num_students,
             student=formatted_student, 
             level=level,
-            exp=exp
+            lvl_percent=lvl_percent
         )
     else:
         caption = KEYBOARDS['show_main_options']['caption_out_of_intensive'][language].format(
@@ -346,6 +346,7 @@ async def show_specific_task_info(update: Update, context: ContextTypes.DEFAULT_
 
     report = make_report(task, language, campus, f"../api/data_{intensive_month_selected}/tasks.db", 0)
     result = [report['report']]
+    caption = "".join(result)
 
     for report_type in ['passed', 'hundred', 'scored_didnt_pass', 'in_progress', 'in_reviews', 'registered']:
         students = report.get(f'scored_{report_type}' if report_type != 'passed' else 'passed_students')
@@ -358,16 +359,52 @@ async def show_specific_task_info(update: Update, context: ContextTypes.DEFAULT_
 
     buttons = [[InlineKeyboardButton(KEYBOARDS['button']['stats']['keyboard'][language][-1]['text'], callback_data='go_back')]]
 
+    context.user_data['buttons'] = buttons
+    context.user_data['caption'] = caption
+
+
     if "report_ready" not in report:
         buttons.insert(0, [InlineKeyboardButton(text_show_other_campus, callback_data=callback_data)])
 
+    if task not in NO_STYLE_TASKS:
+        text_show_autotest_failed = KEYBOARDS['show_specific_task_info']['show_autotests_failed_students'][language]['text']
+        callback_data = 'show_autotest_failed_graph'
+        buttons.insert(1, [InlineKeyboardButton(text_show_autotest_failed, callback_data=callback_data)])
+
     reply_markup = InlineKeyboardMarkup(buttons)
+
+    _, week = INTENSIVE[task]
+
+    current_campus = campus
+    
+    image_path = f"../api/data_march/tasks/{current_campus}/{week}/{task}/images/failed_reasons_{language}.png"
+
+    if os.path.exists(image_path):
+        with open(image_path, "rb") as image:
+            await update.effective_message.edit_media(
+                media=InputMediaPhoto(media=image),
+            )
+        await update.effective_message.edit_caption(
+            caption=caption,
+            reply_markup=reply_markup
+        )
+    else:
+        await update.effective_message.edit_caption(
+            caption=caption,
+            reply_markup=reply_markup
+        )
     await query.edit_message_caption("".join(result))
     await query.edit_message_reply_markup(reply_markup=reply_markup)
 
 
 
+
+
+
 async def show_other_campus_task_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
     task = context.user_data.get('task')
     language, campus = await _get_user_language_and_campus(update, context) 
 
@@ -380,6 +417,7 @@ async def show_other_campus_task_info(update: Update, context: ContextTypes.DEFA
         current_campus = context.user_data['campus'][0]
 
     other_campus = str()
+
 
     other_campuses = {
         "tashkent": "samarkand",
@@ -396,6 +434,8 @@ async def show_other_campus_task_info(update: Update, context: ContextTypes.DEFA
         context.user_data['campus'] = "tashkent"
 
     print(f"Switching from {current_campus} to {other_campus}")
+    
+    context.user_data['current_campus'] = other_campus
 
     report_other = make_report(task, language, other_campus, f"../api/data_{intensive_month_selected}/tasks.db", 0)
 
@@ -411,16 +451,48 @@ async def show_other_campus_task_info(update: Update, context: ContextTypes.DEFA
 
     current_caption = update.effective_message.caption
 
+    _, week = INTENSIVE[task]
+
+    text_show_other_campus = KEYBOARDS['show_specific_task_info']['other_campus_stats_button'][language]['text']
+    callback_data = "show_other_campus_task_info"
+    buttons =  [
+        [InlineKeyboardButton(text_show_other_campus, callback_data=callback_data)],
+        [InlineKeyboardButton(KEYBOARDS['button']['stats']['keyboard'][language][-1]['text'], callback_data='go_back')]
+    ]
+
+    if task not in NO_STYLE_TASKS:
+        text_show_autotest_failed = KEYBOARDS['show_specific_task_info']['show_autotests_failed_students'][language]['text']
+        callback_data = 'show_autotest_failed_graph'
+        buttons.insert(1, [InlineKeyboardButton(text_show_autotest_failed, callback_data=callback_data)])
+ 
+    context.user_data["caption"] = combined_report
+    context.user_data["buttons"] = buttons
+
+    reply_markup = InlineKeyboardMarkup(buttons)
+
     if not current_caption or combined_report.strip() != current_caption.strip():
-        text_show_other_campus = KEYBOARDS['show_specific_task_info']['other_campus_stats_button'][language]['text']
-        callback_data = "show_other_campus_task_info" 
-        reply_markup = InlineKeyboardMarkup([
-            [InlineKeyboardButton(text_show_other_campus, callback_data=callback_data)],
-            [InlineKeyboardButton(KEYBOARDS['button']['stats']['keyboard'][language][-1]['text'], callback_data='go_back')]
-        ])
-        await update.effective_message.edit_caption(combined_report, reply_markup=reply_markup)
+        image_path = f"../api/data_march/tasks/{other_campus}/{week}/{task}/images/failed_reasons_{language}.png"
+
+        if os.path.exists(image_path):
+            with open(image_path, "rb") as image:
+                await update.effective_message.edit_media(
+                    media=InputMediaPhoto(media=image),
+                )
+            await update.effective_message.edit_caption(
+                caption=combined_report,
+                reply_markup=reply_markup
+            )
+       
+        else:
+            await update.effective_message.edit_caption(
+                caption=combined_report,
+                reply_markup=reply_markup
+            )
+
     else:
         print("Caption is the same. Not updating.")
+
+
 
 
 async def _get_user_language_and_campus(update: Update, context: ContextTypes.DEFAULT_TYPE) -> tuple:
@@ -557,9 +629,6 @@ async def show_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     edu_username = get_data(update.effective_chat.id, "edu_username")
 
-
-
-
     if edu_username is None:
         keyboard.insert(0, [InlineKeyboardButton(KEYBOARDS['show_profile']['keyboard'][language], callback_data="authorize_user")])
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -569,28 +638,31 @@ async def show_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
         report = make_profile_report(language, campus, f"../api/data_{intensive_month_selected}/participants_to_read/{campus}/personal_stats.db", edu_username)
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        image_path = f"../api/data_{intensive_month_selected}/images/{random.randint(1, 3)}.png"
+        exam_progresses = ['{}_biggest_fall_students.png', '{}_most_progress_students.png', '{}_unstable_students.png']
 
-        await query.edit_message_caption(caption=report, reply_markup=reply_markup)
+        rand_int =random.randint(0, 2)
 
-        # await query.edit_message_caption(caption="Данные в вашем профиле появятся с 8 марта!", reply_markup=reply_markup)
 
-        # try:
-        #     with open(image_path, "rb") as image_file:
-        #         await context.bot.send_photo(
-        #             chat_id=update.effective_chat.id,
-        #             photo=InputFile(image_file),
-        #             caption=report,
-        #             reply_markup=reply_markup
-        #         )
-        #         await context.bot.delete_message(update.effective_chat.id, update.effective_message.id)
-        # except FileNotFoundError:
-        #     print.error(f"Image not found at path: {image_path}")
-        #     await context.bot.send_message(
-        #         chat_id=update.effective_chat.id,
-        #         text=report,
-        #         reply_markup=reply_markup
-        #     )
+        image_path = f"../api/data_{intensive_month_selected}/images/{exam_progresses[rand_int].format(campus)}"
+
+        # await query.edit_message_caption(caption=report, reply_markup=reply_markup)
+
+        try:
+            with open(image_path, "rb") as image_file:
+                await context.bot.send_photo(
+                    chat_id=update.effective_chat.id,
+                    photo=InputFile(image_file),
+                    caption=report,
+                    reply_markup=reply_markup
+                )
+                await context.bot.delete_message(update.effective_chat.id, update.effective_message.id)
+        except FileNotFoundError:
+            print.error(f"Image not found at path: {image_path}")
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=report,
+                reply_markup=reply_markup
+            )
 
 async def show_previous_intensives(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -646,7 +718,41 @@ async def show_previous_intensives(update: Update, context: ContextTypes.DEFAULT
         except FileNotFoundError as e:
             print(f"Error: {e}")
 
+async def show_autotest_failed_graph(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    await query.answer()
 
+    language, _ = await _get_user_language_and_campus(update, context)
+
+    task = context.user_data['task']
+    current_campus = context.user_data['current_campus'] 
+
+    caption = context.user_data.get("caption")
+    buttons = context.user_data.get("buttons")
+
+    buttons.pop(1)
+
+    reply_markup = InlineKeyboardMarkup(buttons)
+
+    _, week = INTENSIVE[task]
+
+    graph_autotest_image_path = f"../api/data_{intensive_month_selected}/tasks/{current_campus}/{week}/{task}/images/failed_tests_{language}.png"
+    
+    if os.path.exists(graph_autotest_image_path):
+        with open(graph_autotest_image_path, "rb") as autotest_graph:
+            await update.effective_message.edit_media(
+                media=InputMediaPhoto(media=autotest_graph),
+            )
+        await update.effective_message.edit_caption(caption=caption, reply_markup=reply_markup)
+    else:
+        caption = KEYBOARDS['show_specific_task_info']['autotest_graph_has_not_been_done'][language]
+
+        await update.effective_message.edit_caption(caption=caption ,reply_markup=reply_markup)
+
+
+
+
+    
 
 
 def main():
@@ -669,7 +775,9 @@ def main():
 
     app.add_handler(CallbackQueryHandler(show_tasks, pattern=r"^stats_intensive_week_(1|2|3|4)$"))
     app.add_handler(CallbackQueryHandler(show_specific_task_info, pattern=r"^T\d{2}D\d{2}$|^E\d{2}D\d{2}$|^P\d{2}D\d{2}$"))
-    app.add_handler(CallbackQueryHandler(show_other_campus_task_info, pattern=r"^show_other_campus_task_info"))
+    app.add_handler(CallbackQueryHandler(show_other_campus_task_info, pattern=r"^show_other_campus_task_info$"))
+
+    app.add_handler(CallbackQueryHandler(show_autotest_failed_graph, pattern=r"^show_autotest_failed_graph$"))
 
     app.add_handler(CallbackQueryHandler(show_previous_intensives, pattern=r"^previous_intensives|show_previous_intensives_(tashkent|samarkand)|show_previous_(tashkent|samarkand)_(september|november|february)_(2024|2025)$"))
 

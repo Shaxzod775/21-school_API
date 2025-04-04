@@ -27,7 +27,7 @@ def populate_students_exam_progress(db_path, students):
 
 
 
-def sort_students_exam_progress(db_path, campus):
+def sort_students_exam_progress(db_path, campus, intensive_month_selected):
     students = get_all_active_students_by_exp(db_path)
 
     if not students:
@@ -46,8 +46,7 @@ def sort_students_exam_progress(db_path, campus):
             student_username TEXT UNIQUE,
             E01D05 INTEGER,
             E02D12 INTEGER,
-            E03D19 INTEGER,
-            E04D26 INTEGER
+            E03D19 INTEGER
         )
     """)
     conn.commit()
@@ -132,7 +131,6 @@ def sort_personal_stats(db_path, campus, target_student):
             
 
         
-
         results[key_name] = {  # Store results for each key
             "rank": student_rank,
             "percent_more": percent_more,
