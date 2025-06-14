@@ -37,6 +37,6 @@ INTENSIVE = {
 
 EXAMS = ["E01D05", "E02D12", "E03D19", "E04D26"]
 NO_STYLE_TASKS = ["T01D01", "T02D02", "E01D05", "E02D12", "E03D19", "E04D26"]
-INTENSIVE_MONTHS = ["september_november", "february", "march"]
-intensive_month_selected = "march"
+INTENSIVE_MONTHS = ["september_november", "february", "march", "june"]
+intensive_month_selected = "june"
 

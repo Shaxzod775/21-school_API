@@ -34,7 +34,6 @@ def parse_student_info(url, username, password, auth_code, intensive_month_selec
     chrome_options.add_argument("--disable-extensions")
     driver = webdriver.Chrome(options=chrome_options)
 
-
     try:
         driver.get(url)
 
@@ -190,8 +189,9 @@ def parse_personal_stats(url, username, password, auth_code, intensive_month_sel
                 def update_stats(campus, usernames):
                     db_path = f"data_{intensive_month_selected}/participants/{campus}/personal_stats.db"
                     # active_participants = get_active_student_list(f"data_{intensive_month_selected}/participants/{campus}/participants.db") or usernames
-                    active_participants = get_active_student_list(f"data_{intensive_month_selected}/participants/{campus}/participants.db") or usernames
+                    active_participants = usernames
                     last_parced_student = get_last_parced_student_personal_stats(db_path)
+                    print("Last parsed student:", last_parced_student)
                     if last_parced_student in active_participants:
                         active_participants = active_participants[active_participants.index(last_parced_student):]
 

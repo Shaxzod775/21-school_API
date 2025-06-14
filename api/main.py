@@ -49,6 +49,7 @@ def get_file_token():
     
 
 def get_list_of_campuses_api(access_token):
+    print("THE PROGRAM IS PARSING CAMPUSES FROM THE API")
     HEADERS = {
     'Authorization': 'Bearer {}'.format(access_token),
     }
@@ -60,7 +61,7 @@ def get_list_of_campuses_api(access_token):
 
         campuses_json = json.loads(_return_value)['campuses']
 
-        with open(f"data_{intensive_month_selected}/campuses/campuses.csv", "w+") as file:
+        with open(f"data_{intensive_month_selected}/campuses/campuses.csv", "w", encoding="utf-8") as file:
             file.write("id,shortName,fullName\n")
             for i in range(len(campuses_json)):
                 id = campuses_json[i]['id']
@@ -73,7 +74,7 @@ def get_list_of_campuses_api(access_token):
 
 def get_specific_campus_id(campus_name, intensive_month_selected):
     _return_value = "None"
-    with open(f"data_{intensive_month_selected}/campuses/campuses.csv", "r+") as file:
+    with open(f"data_{intensive_month_selected}/campuses/campuses.csv", "r+", encoding="utf-8") as file:
         line = file.readline()
         campuses = list()
         while line:
@@ -422,6 +423,8 @@ def parse_personal_stats(access_token, intensive_month_selected):
                     len([badge for badge in badges["badges"] if badge["name"] == "Entertainment event"]),
                     len(badges["badges"])
                 )
+                if i > 0:
+                    set_last_parced_student_personal_stats(campus, db_path, active_participants[i - 1], 0)
                 set_last_parced_student_personal_stats(campus, db_path, participant, 1)
                 print(f"{participant}, {logtime}, {basic_info['expValue']}, {len(accepted_projects['projects'])}, {len(badges['badges'])}")
                 time.sleep(1)
@@ -638,7 +641,7 @@ def main():
             token = get_file_token()
 
             parse_student_info(token, intensive_month_selected)
-            parse_personal_stats(token, intensive_month_selected)
+            # parse_personal_stats(token, intensive_month_selected)
             update_read_databases()
 
         elif sys.argv[1] == "parse_exam_progress":
@@ -661,8 +664,10 @@ def main():
         
             project_id, week = INTENSIVE[f'{task}']
 
-            if not os.path.exists(f'data_{intensive_month_selected}/campuses/campuses.csv'):
-                get_list_of_campuses_api(token)
+            # if not os.path.exists(f'data_{intensive_month_selected}/campuses/campuses.csv'):
+                # get_list_of_campuses_api(token)
+            
+            get_list_of_campuses_api(token)
             
             tashkent_id = get_specific_campus_id("tashkent", intensive_month_selected)
             samarkand_id = get_specific_campus_id("samarkand", intensive_month_selected)
